@@ -263,7 +263,6 @@ source = ["pantau"]
 omit = [
     "pantau/audio/*",
     "pantau/main.py",
-    "pantau/agent/runtime.py",
     "pantau/agent/prompts.py",
     "*/tests/*",
     "*/__pycache__/*",

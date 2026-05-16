@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import contextlib
 import sys
+from unittest.mock import MagicMock
 
 import pytest
 from pydantic_ai.mcp import MCPToolset
@@ -9,6 +11,7 @@ from pydantic_ai.models.openai import OpenAIResponsesModel
 
 from pantau.agent import runtime
 from pantau.agent.runtime import (
+    _call_tool_on_server,
     build_agent,
     execute_mcp_tool,
     resolve_available_mcp_servers,
@@ -220,3 +223,97 @@ async def test_execute_mcp_tool_raises_when_tool_is_missing(
 
     with pytest.raises(LookupError, match="hue_set_room_on"):
         await execute_mcp_tool(servers, "hue_set_room_on", {"room": "Flur"})
+
+
+@pytest.mark.asyncio
+async def test_execute_mcp_tool_raises_runtime_error_on_exception(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    servers = [McpServerConfig(name="huehub", args=["-m", "huehub.mcp_server"])]
+
+    async def fake_call_tool_on_server(
+        server: McpServerConfig,
+        tool_name: str,
+        arguments: dict[str, object],
+    ) -> None:
+        raise ValueError("Simulated network failure")
+
+    monkeypatch.setattr(runtime, "_call_tool_on_server", fake_call_tool_on_server)
+
+    with pytest.raises(RuntimeError, match="Unable to execute MCP tool"):
+        await execute_mcp_tool(servers, "hue_set_room_on", {"room": "Flur"})
+
+
+@pytest.mark.asyncio
+async def test_call_tool_on_server_returns_result_when_tool_exists(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    server = McpServerConfig(name="huehub", args=["-m", "huehub.mcp_server"])
+
+    @contextlib.asynccontextmanager
+    async def fake_stdio_client(*args, **kwargs):
+        yield "fake_read", "fake_write"
+
+    class FakeSession:
+        def __init__(self, read, write):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def initialize(self):
+            pass
+
+        async def list_tools(self):
+            tools_mock = MagicMock()
+            tool_mock = MagicMock()
+            tool_mock.name = "hue_set_room_on"
+            tools_mock.tools = [tool_mock]
+            return tools_mock
+
+        async def call_tool(self, name, arguments):
+            return {"status": "success", "room": arguments.get("room")}
+
+    monkeypatch.setattr(runtime, "stdio_client", fake_stdio_client)
+    monkeypatch.setattr(runtime, "ClientSession", FakeSession)
+
+    result = await _call_tool_on_server(server, "hue_set_room_on", {"room": "Flur"})
+    assert result == {"status": "success", "room": "Flur"}
+
+
+@pytest.mark.asyncio
+async def test_call_tool_on_server_returns_none_when_tool_missing(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    server = McpServerConfig(name="huehub", args=["-m", "huehub.mcp_server"])
+
+    @contextlib.asynccontextmanager
+    async def fake_stdio_client(*args, **kwargs):
+        yield "fake_read", "fake_write"
+
+    class FakeSession:
+        def __init__(self, read, write):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def initialize(self):
+            pass
+
+        async def list_tools(self):
+            tools_mock = MagicMock()
+            tools_mock.tools = []
+            return tools_mock
+
+    monkeypatch.setattr(runtime, "stdio_client", fake_stdio_client)
+    monkeypatch.setattr(runtime, "ClientSession", FakeSession)
+
+    result = await _call_tool_on_server(server, "missing_tool", {})
+    assert result is None
