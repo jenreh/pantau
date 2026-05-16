@@ -1,122 +1,97 @@
-# Pantau — Voice Agent: Implementation Concept v2
-
-*Merged from two independent reviews*
+# Pantau — Voice Agent: Implementation Concept v3
 
 ---
 
-## 1. Executive Summary
+## Architecture
 
-Pantau is a local-first, German-language voice agent for smart home control. It chains **wake-word → VAD → STT → fast-path router → agent → MCP facade → TTS**, requiring internet only for the LLM (MVP). All device control runs over the local network with no cloud dependency.
+The full pipeline is shown in the interactive architecture diagram rendered earlier in this
+conversation (SVG, clickable nodes). Pipeline in sequence:
+
+```
+Microphone
+  → Wake word detector  (OpenWakeWord · "Pantau")
+  → VAD / endpoint      (Silero VAD)
+  → STT local           (faster-whisper · language=de)
+  → Fast-path router    (deterministic, bypasses LLM for common phrases)
+  → Pydantic AI agent   (gpt-5.4-nano  →  Ollama qwen3 offline target)
+  → FastMCP facade      (pantau-home · 7 high-level tools)
+      ├─ Harmony MCP    (harmonyhub-py  · TV / activities)
+      ├─ Hue MCP        (huehub-py      · lights / scenes / rooms)
+      ├─ Sonos MCP      (sonos-py       · playback / volume)
+      └─ HomeKit MCP    (homekit-py     · blinds / covers)
+  → TTS local           (Piper · de_DE-thorsten-high)
+  → Speaker
+```
+
+Internet is required only for the LLM in the MVP. Everything else runs on the local network.
 
 ---
 
-## 2. Technology Decisions
+## 1. Technology Decisions
 
-### 2.1 Wake-Word Detection
+### 1.1 Wake-Word — OpenWakeWord
 
-**→ OpenWakeWord** (Apache 2.0)
+Apache 2.0, fully local, custom model training pipeline available for "Pantau".
 
-Runs fully local on CPU. A custom model for "Pantau" is needed since it is not a built-in wake word. Practical ramp-up:
+Ramp-up plan:
+1. MVP placeholder: push-to-talk key or closest existing model ("hey jarvis")
+2. Train a custom `pantau.tflite` via the OpenWakeWord training pipeline
+3. Tune threshold with real room noise (start at 0.5)
+4. Post-wake timeout: 4–8 s
+5. Barge-in: v0.3
 
-1. MVP placeholder: use a push-to-talk key, or the closest existing model ("hey jarvis")
-2. Train a custom model using OpenWakeWord's training pipeline
-3. Tune threshold against real room noise
-4. Set a post-wake timeout of 4–8 s
-5. "Barge-in" (interrupting agent speech): defer to v0.3
+Porcupine is robust but requires a Picovoice AccessKey at init — a cloud/account dependency
+that conflicts with the local-first architecture goal.
 
-**Porcupine** is viable and robust on-device, but requires a Picovoice AccessKey at init — a cloud dependency that conflicts with the no-account architecture goal.
+### 1.2 VAD — Silero VAD + faster-whisper filter
 
-### 2.2 VAD / Endpointing
+Two separate roles in the pipeline:
 
-**→ Silero VAD** as a dedicated pipeline stage, *and* `vad_filter=True` inside faster-whisper
-
-Two distinct roles:
-
-| Stage | Tool | Purpose |
+| Stage | Tool | Role |
 |---|---|---|
-| Pre-STT | Silero VAD | Detect speech onset; discard non-speech chunks before sending to Whisper; acts as endpointing |
-| Inside STT | faster-whisper `vad_filter` | Second pass; strips remaining silence from the audio window before decoding |
+| Pre-STT | Silero VAD | Speech onset detection; discards non-speech chunks before Whisper |
+| Inside STT | faster-whisper `vad_filter=True` | Second pass; strips residual silence from the audio window |
 
-Silero VAD processes a 30 ms chunk in < 1 ms on a single CPU core — negligible overhead for the latency budget.
+Silero processes a 30 ms chunk in < 1 ms on a single CPU core — negligible overhead.
 
-### 2.3 Speech-to-Text (local, German)
+### 1.3 STT — faster-whisper (local, German)
 
-**→ faster-whisper** with `language="de"`, `beam_size=1`, `condition_on_previous_text=False`
+`language="de"`, `beam_size=1`, `vad_filter=True`, `condition_on_previous_text=False`
 
-`condition_on_previous_text=False` is important for command recognition: it prevents Whisper from hallucinating continuations of prior transcriptions across turns.
+`condition_on_previous_text=False` prevents hallucinated continuations from prior turns —
+important for short command recognition.
 
-| Hardware | Model | Runtime | Notes |
-|---|---|---|---|
-| Raspberry Pi / weak CPU | Vosk or whisper.cpp tiny/base | Vosk / whisper.cpp | Lower accuracy, lower latency |
-| Mini PC CPU only | `small` int8 | faster-whisper | Good MVP baseline |
-| Modern CPU / 8 GB RAM | `medium` int8 | faster-whisper | Better German WER |
-| NVIDIA GPU ≥ 4 GB | `small` or `medium` fp16 | faster-whisper | < 0.5 s latency |
-| Quality-first | `large-v3` or `turbo` | faster-whisper / whisper.cpp | Likely overkill for commands |
+| Hardware | Model | Runtime |
+|---|---|---|
+| Raspberry Pi / weak CPU | Vosk or `tiny` / `base` | whisper.cpp / Vosk |
+| Mini PC CPU only | `small` int8 | faster-whisper |
+| Modern CPU / 8 GB RAM | `medium` int8 | faster-whisper |
+| NVIDIA GPU ≥ 4 GB | `small` or `medium` fp16 | faster-whisper |
 
-Start with `small`. Upgrade only if German command accuracy is insufficient on your hardware.
+Start with `small`. Upgrade only if German accuracy is insufficient.
 
-### 2.4 LLM
+### 1.4 LLM
 
-#### MVP — Cloud, fast and cheap
+**MVP (cloud):** `gpt-5.4-nano` — $0.20 / 1M input tokens, $1.25 / 1M output (May 2026).
+Pure text routing for smart home commands costs fractions of a cent per call.
+Do not use a realtime audio model if STT/TTS are local — they are priced separately and
+significantly more expensive.
 
-**→ gpt-5.4-nano** (`$0.20 / 1M` input, `$1.25 / 1M` output — May 2026 pricing)
-
-Pure text routing for smart home commands costs fractions of a cent per command. Do not use a realtime audio model for MVP if STT/TTS are local — they are priced separately and are significantly more expensive.
-
-**gpt-5.4-mini** is stronger but ~4× more expensive; useful if tool-selection accuracy on the eval set is insufficient.
-
-**Gemini 2.0 Flash** is a valid alternative with comparable cost and excellent German support.
-
-#### Offline target
-
-**→ Ollama + qwen3** (or qwen2.5:3b for weaker hardware)
-
-pydantic-ai supports Ollama via `ollama:qwen3` out of the box. llama.cpp is an alternative; prefer models with native tool-call format handlers (Llama 3.x, Qwen 2.5, Hermes, Mistral Nemo).
+**Offline target:** Ollama + `qwen3` (or `qwen2.5:3b` for weaker hardware).
+pydantic-ai supports it via `ollama:qwen3` with no other changes.
 
 ```python
-# Swap the model string; everything else stays identical
-agent = Agent("ollama:qwen3", instructions=SYSTEM_PROMPT, toolsets=[home])
+# swap model string only — everything else stays identical
+agent = Agent("ollama:qwen3", instructions=SYSTEM_PROMPT, toolsets=[home_mcp])
 ```
 
-### 2.5 MCP Design: Two Options
+### 1.5 MCP Design — FastMCP Facade
 
-#### Option A — Direct server wiring (fastest to implement)
+A single `pantau-home-mcp` server exposes 7 opinionated, high-level tools.
+The LLM sees exactly 7 tools instead of dozens of low-level device primitives —
+fewer tools means faster and more reliable tool selection.
 
-Wire all four device MCP servers directly into pydantic-ai:
-
-```json
-// pantau.mcp.json
-{
-  "mcpServers": {
-    "harmony": {
-      "command": "harmony-mcp",
-      "env": { "HARMONY_HUB_HOST": "${HARMONY_HUB_HOST}" }
-    },
-    "hue":     { "command": "hue-mcp" },
-    "sonos":   { "command": "sonos-mcp" },
-    "homekit": {
-      "command": "homekit-mcp",
-      "env": { "HOMEKIT_MCP__ALLOW_WRITE_TOOLS": "true" }
-    }
-  }
-}
 ```
-
-```python
-from pydantic_ai import Agent
-from pydantic_ai.mcp import load_mcp_servers
-
-servers = load_mcp_servers("pantau.mcp.json")
-agent = Agent("openai:gpt-5.4-nano", instructions=SYSTEM_PROMPT, toolsets=servers)
-```
-
-**Problem**: The LLM sees many low-level device tools. This increases latency, token consumption, and the probability of wrong tool selection.
-
-#### Option B — FastMCP facade (recommended)
-
-A single `pantau-home-mcp` server exposes a small, opinionated set of high-level tools. The LLM sees exactly 7 tools instead of dozens of low-level primitives.
-
-```python
 pantau_turn_on_room(room, brightness, color)
 pantau_turn_off_room(room)
 pantau_start_tv(activity)
@@ -126,56 +101,48 @@ pantau_play_music(room, query)
 pantau_set_volume(room, value_or_delta)
 ```
 
-**Why Option B is better for voice:**
+The facade also acts as a security perimeter: every device action goes through a named,
+typed Python function with explicit validation. No raw device commands are ever exposed
+to the LLM.
 
-- Fewer tools = faster, more reliable tool selection
-- Semantic tool names match natural language intent
-- Device-specific quirks are hidden from the LLM
-- Easier to add room/device aliases and safety checks in one place
+### 1.6 TTS — Piper TTS (local, German)
 
-### 2.6 Text-to-Speech (local, German)
+`de_DE-thorsten-high` voice. ONNX-based, < 300 ms synthesis on CPU, no internet required.
 
-**→ Piper TTS** with `de_DE-thorsten-high` voice
+### 1.7 pydantic-deepagents — not used
 
-ONNX-based, extremely fast (< 300 ms for typical agent responses on CPU), no internet required. Kokoro-82M is higher quality but needs more RAM/VRAM; useful for v0.3.
+pydantic-deepagents is built for autonomous planning agents (filesystem, subagents, shell).
+Pantau is a reactive command executor: 1 utterance → 1 MCP tool → 1 response.
+The framework would add planning overhead, filesystem tools in LLM context, and startup
+latency with no benefit for this interaction model.
 
-### 2.7 Should pydantic-deepagents be used?
-
-**For MVP: No. For a skills-heavy v0.3: maybe.**
-
-pydantic-deepagents is built for autonomous planning agents (filesystem access, subagent delegation, multi-step task execution). Pantau is a reactive command executor: 1 command → 1 MCP tool → 1 response. Adding pydantic-deepagents would introduce:
-
-- Planning and filesystem tools in the LLM context (security risk for home control)
-- Higher startup latency per request
-- Architectural complexity with no benefit for this interaction model
-
-Consider it **only** if you later want SKILL.md auto-discovery and injection, persistent memory across sessions, lifecycle hooks for audit logging, or a more autonomous multi-step agent (e.g. "Schalte abends um 18 Uhr alle Lichter ein und spiele Jazz"). That is a v0.3 concern.
+Reconsider only for v0.3 if multi-step scheduling commands are added
+("Schalte abends um 18 Uhr alle Lichter ein und spiele Jazz").
 
 ---
 
-## 3. Project Structure
+## 2. Project Structure
 
-```bash
+```
 pantau/
 ├── pyproject.toml
 ├── config/
-│   ├── pantau.toml              # device IPs, LLM settings, wake word config
-│   └── pantau.mcp.json          # MCP server definitions (Option A reference)
+│   ├── pantau.yaml              # base configuration
+│   └── pantau.mcp.json          # MCP server definitions (reference)
 ├── pantau/
 │   ├── __init__.py
 │   ├── main.py                  # async event loop
-│   ├── config.py                # pydantic-settings config model
+│   ├── config.py                # PantauConfig (extends BaseConfig)
 │   ├── audio/
-│   │   ├── microphone.py        # audio capture (sounddevice)
 │   │   ├── wakeword.py          # OpenWakeWord listener
 │   │   ├── vad.py               # Silero VAD / endpointing
 │   │   ├── stt.py               # faster-whisper transcription
 │   │   └── tts.py               # Piper TTS synthesis + playback
 │   ├── agent/
 │   │   ├── runtime.py           # pydantic-ai Agent construction
-│   │   ├── prompts.py           # SYSTEM_PROMPT, routing prompt
+│   │   ├── prompts.py           # SYSTEM_PROMPT
 │   │   ├── fast_path.py         # deterministic pre-router
-│   │   └── mcp_config.py        # MCP server wiring (Option B)
+│   │   └── skills.py            # optional domain knowledge injection
 │   └── home_mcp/
 │       ├── server.py            # FastMCP facade (pantau-home-mcp)
 │       ├── tools_harmony.py
@@ -183,11 +150,146 @@ pantau/
 │       ├── tools_sonos.py
 │       └── tools_homekit.py
 └── evals/
-    ├── commands_de.yaml         # German command test cases
-    └── test_agent_routing.py    # pytest eval harness
+    ├── commands_de.yaml
+    └── test_agent_routing.py
 ```
 
-**Python version: 3.14+** — required to match the `jenreh/*` device library dependencies.
+**Python: 3.13+** — matches appkit-commons and the jenreh device library requirements.
+
+---
+
+## 3. Configuration
+
+### 3.1 PantauConfig — `pantau/config.py`
+
+Extends `BaseConfig` from `appkit-commons`. YAML is the base; environment variables
+(prefix `PANTAU_`) override at runtime. Sensitive values use the `secret:` prefix and
+are resolved automatically from environment variables or Azure Key Vault.
+
+```python
+from appkit_commons.configuration import BaseConfig, load_configuration, setup_logging
+
+
+class SttConfig(BaseConfig):
+    model_size: str = "small"   # tiny | base | small | medium | large-v3
+    device: str = "auto"        # auto | cpu | cuda
+    language: str = "de"
+
+
+class TtsConfig(BaseConfig):
+    model: str = "models/de_DE-thorsten-high.onnx"
+    speak_rate: float = 1.0
+
+
+class WakeWordConfig(BaseConfig):
+    model: str = "models/pantau.tflite"
+    threshold: float = 0.5
+    post_wake_timeout_s: float = 6.0
+
+
+class LlmConfig(BaseConfig):
+    provider: str = "openai"           # openai | ollama
+    model: str = "gpt-5.4-nano"
+    api_key: str = "secret:openai_api_key"   # resolved from env OPENAI_API_KEY
+    base_url: str | None = None        # set for Ollama: http://localhost:11434/v1
+
+
+class HueConfig(BaseConfig):
+    bridge_ip: str = "192.168.1.2"
+    api_key: str = "secret:hue_api_key"
+
+
+class HarmonyConfig(BaseConfig):
+    host: str = "192.168.1.50"
+
+
+class SonosConfig(BaseConfig):
+    discovery_timeout_s: int = 5
+
+
+class HomekitConfig(BaseConfig):
+    pin: str = "secret:homekit_pin"
+    allow_write_tools: bool = True
+
+
+class PantauConfig(BaseConfig):
+    model_config = {"env_prefix": "PANTAU_"}
+
+    log_level: str = "INFO"
+
+    wake_word: WakeWordConfig = WakeWordConfig()
+    stt: SttConfig = SttConfig()
+    tts: TtsConfig = TtsConfig()
+    llm: LlmConfig = LlmConfig()
+    hue: HueConfig = HueConfig()
+    harmony: HarmonyConfig = HarmonyConfig()
+    sonos: SonosConfig = SonosConfig()
+    homekit: HomekitConfig = HomekitConfig()
+
+
+def load_config(path: str = "config/pantau.yaml") -> PantauConfig:
+    cfg = load_configuration(PantauConfig, path)
+    setup_logging(level=cfg.log_level)
+    return cfg
+```
+
+### 3.2 YAML base config — `config/pantau.yaml`
+
+```yaml
+log_level: INFO
+
+wake_word:
+  model: models/pantau.tflite
+  threshold: 0.5
+  post_wake_timeout_s: 6.0
+
+stt:
+  model_size: small
+  device: auto
+  language: de
+
+tts:
+  model: models/de_DE-thorsten-high.onnx
+  speak_rate: 1.0
+
+llm:
+  provider: openai
+  model: gpt-5.4-nano
+  # api_key resolved via secret:openai_api_key → env var OPENAI_API_KEY
+
+hue:
+  bridge_ip: 192.168.1.2
+  # api_key resolved via secret:hue_api_key
+
+harmony:
+  host: 192.168.1.50
+
+sonos:
+  discovery_timeout_s: 5
+
+homekit:
+  allow_write_tools: true
+  # pin resolved via secret:homekit_pin
+```
+
+### 3.3 Environment variable overrides
+
+appkit-commons uses `__` as the nested separator:
+
+```bash
+# override LLM for offline mode
+export PANTAU_LLM__PROVIDER=ollama
+export PANTAU_LLM__MODEL=qwen3
+export PANTAU_LLM__BASE_URL=http://localhost:11434/v1
+
+# override STT model
+export PANTAU_STT__MODEL_SIZE=medium
+
+# secrets (resolved via secret: prefix)
+export OPENAI_API_KEY=sk-...
+export HUE_API_KEY=abc123
+export HOMEKIT_PIN=123-45-678
+```
 
 ---
 
@@ -200,25 +302,29 @@ import asyncio
 import numpy as np
 import sounddevice as sd
 from openwakeword.model import Model
+from pantau.config import WakeWordConfig
 
 
 class WakeWordListener:
     SAMPLE_RATE = 16_000
-    CHUNK_MS = 80  # 1280 samples — OpenWakeWord requirement
-    THRESHOLD = 0.5
+    CHUNK_MS = 80       # 1280 samples — OpenWakeWord requirement
 
-    def __init__(self, model_path: str = "hey_jarvis"):
-        self.model = Model(wakeword_models=[model_path], inference_framework="tflite")
+    def __init__(self, cfg: WakeWordConfig) -> None:
+        self.threshold = cfg.threshold
+        self.model = Model(
+            wakeword_models=[cfg.model],
+            inference_framework="tflite",
+        )
 
     async def listen(self) -> None:
         """Blocks until wake word is detected."""
         loop = asyncio.get_event_loop()
         detected = asyncio.Event()
 
-        def audio_callback(indata, frames, time, status):
+        def _callback(indata, frames, time, status):
             pcm = (indata[:, 0] * 32768).astype(np.int16)
             prediction = self.model.predict(pcm)
-            if any(v >= self.THRESHOLD for v in prediction.values()):
+            if any(v >= self.threshold for v in prediction.values()):
                 loop.call_soon_threadsafe(detected.set)
 
         chunk = int(self.SAMPLE_RATE * self.CHUNK_MS / 1000)
@@ -227,7 +333,7 @@ class WakeWordListener:
             channels=1,
             dtype="float32",
             blocksize=chunk,
-            callback=audio_callback,
+            callback=_callback,
         ):
             await detected.wait()
 ```
@@ -242,16 +348,15 @@ from silero_vad import load_silero_vad, VADIterator
 
 class SileroVAD:
     SAMPLE_RATE = 16_000
-    CHUNK_SIZE = 512  # ~32 ms
 
-    def __init__(self):
-        self.model = load_silero_vad()
-        self.iterator = VADIterator(self.model, sampling_rate=self.SAMPLE_RATE)
+    def __init__(self) -> None:
+        model = load_silero_vad()
+        self.iterator = VADIterator(model, sampling_rate=self.SAMPLE_RATE)
 
     def is_speech(self, chunk: np.ndarray) -> bool:
         tensor = torch.from_numpy(chunk).float()
         result = self.iterator(tensor, return_seconds=False)
-        return result is not None  # dict returned only during speech
+        return result is not None
 ```
 
 ### 4.3 STT — `pantau/audio/stt.py`
@@ -261,44 +366,40 @@ import asyncio
 import numpy as np
 import sounddevice as sd
 from faster_whisper import WhisperModel
+from pantau.config import SttConfig
 
 
 class GermanSTT:
-    SAMPLE_RATE = 16_000
     SILENCE_THRESHOLD = 0.01
     SILENCE_DURATION_S = 1.2
     MAX_DURATION_S = 10.0
 
-    def __init__(self, model_size: str = "small", device: str = "auto"):
-        compute = "float16" if device == "cuda" else "int8"
-        self.model = WhisperModel(model_size, device=device, compute_type=compute)
-
-    def transcribe_command(self, wav_path: str) -> str:
-        segments, _ = self.model.transcribe(
-            wav_path,
-            language="de",
-            beam_size=1,
-            vad_filter=True,
-            condition_on_previous_text=False,  # prevents hallucination carry-over
+    def __init__(self, cfg: SttConfig) -> None:
+        self.cfg = cfg
+        compute = "float16" if cfg.device == "cuda" else "int8"
+        self.model = WhisperModel(
+            cfg.model_size,
+            device=cfg.device,
+            compute_type=compute,
         )
-        return " ".join(s.text.strip() for s in segments).strip()
 
     async def record_and_transcribe(self) -> str:
         audio = await asyncio.to_thread(self._record_until_silence)
-        return await asyncio.to_thread(self._transcribe_array, audio)
+        return await asyncio.to_thread(self._transcribe, audio)
 
     def _record_until_silence(self) -> np.ndarray:
-        frames = []
+        sr = 16_000
+        frames: list[np.ndarray] = []
         silent_chunks = 0
-        silence_limit = int(self.SILENCE_DURATION_S * self.SAMPLE_RATE / 512)
-        max_chunks = int(self.MAX_DURATION_S * self.SAMPLE_RATE / 512)
-        with sd.InputStream(
-            samplerate=self.SAMPLE_RATE, channels=1, dtype="float32", blocksize=512
-        ) as stream:
+        silence_limit = int(self.SILENCE_DURATION_S * sr / 512)
+        max_chunks = int(self.MAX_DURATION_S * sr / 512)
+
+        with sd.InputStream(samplerate=sr, channels=1, dtype="float32",
+                            blocksize=512) as stream:
             for _ in range(max_chunks):
                 chunk, _ = stream.read(512)
                 frames.append(chunk[:, 0])
-                rms = float(np.sqrt(np.mean(chunk**2)))
+                rms = float(np.sqrt(np.mean(chunk ** 2)))
                 if rms < self.SILENCE_THRESHOLD:
                     silent_chunks += 1
                     if silent_chunks >= silence_limit:
@@ -307,10 +408,10 @@ class GermanSTT:
                     silent_chunks = 0
         return np.concatenate(frames)
 
-    def _transcribe_array(self, audio: np.ndarray) -> str:
+    def _transcribe(self, audio: np.ndarray) -> str:
         segments, _ = self.model.transcribe(
             audio,
-            language="de",
+            language=self.cfg.language,
             beam_size=1,
             vad_filter=True,
             condition_on_previous_text=False,
@@ -318,9 +419,39 @@ class GermanSTT:
         return " ".join(s.text.strip() for s in segments).strip()
 ```
 
-### 4.4 Fast-Path Pre-Router — `pantau/agent/fast_path.py`
+### 4.4 TTS — `pantau/audio/tts.py`
 
-Handles the most common fixed phrases deterministically, bypassing the LLM entirely. This eliminates network round-trip latency (~400–700 ms) for high-frequency commands.
+```python
+import asyncio
+import io
+import sounddevice as sd
+import soundfile as sf
+from piper.voice import PiperVoice
+from pantau.config import TtsConfig
+
+
+class PiperTTS:
+    def __init__(self, cfg: TtsConfig) -> None:
+        self.voice = PiperVoice.load(cfg.model)
+
+    async def speak(self, text: str) -> None:
+        await asyncio.to_thread(self._synthesize_and_play, text)
+
+    def _synthesize_and_play(self, text: str) -> None:
+        buf = io.BytesIO()
+        with sf.SoundFile(buf, mode="w", samplerate=22050,
+                          channels=1, format="WAV") as f:
+            for audio_bytes in self.voice.synthesize_stream_raw(text):
+                f.buffer_write(audio_bytes, dtype="int16")
+        buf.seek(0)
+        data, sr = sf.read(buf, dtype="float32")
+        sd.play(data, sr, blocking=True)
+```
+
+### 4.5 Fast-Path Router — `pantau/agent/fast_path.py`
+
+Handles the most frequent fixed phrases deterministically — no LLM call, no network round-trip.
+Saves ~400–700 ms per matched command.
 
 ```python
 from __future__ import annotations
@@ -333,71 +464,64 @@ class FastPathResult:
     args: dict
 
 
-_FAST_PATHS: dict[frozenset[str], FastPathResult] = {
-    frozenset({
-        "schalte den fernseher ein",
-        "mach den fernseher an",
-        "fernseher ein",
-        "tv ein",
-        "tv an",
-        "fernseher an",
-    }): FastPathResult("pantau_start_tv", {"activity": "Fernsehen"}),
-    frozenset({
-        "schalte den fernseher aus",
-        "fernseher aus",
-        "tv aus",
-        "mach den fernseher aus",
-    }): FastPathResult("pantau_power_off_tv", {}),
-    frozenset({
-        "schalte das wohnzimmer ein",
-        "wohnzimmer ein",
-        "licht im wohnzimmer an",
-        "wohnzimmer licht an",
-    }): FastPathResult("pantau_turn_on_room", {"room": "Wohnzimmer"}),
-    frozenset({
-        "schalte das wohnzimmer aus",
-        "wohnzimmer aus",
-        "licht im wohnzimmer aus",
-        "wohnzimmer licht aus",
-    }): FastPathResult("pantau_turn_off_room", {"room": "Wohnzimmer"}),
-}
-# Build a flat lookup from normalized phrase → result
-_LOOKUP: dict[str, FastPathResult] = {
-    phrase: result for phrases, result in _FAST_PATHS.items() for phrase in phrases
+_ROUTES: dict[str, FastPathResult] = {
+    phrase: result
+    for phrases, result in [
+        (
+            {"schalte den fernseher ein", "mach den fernseher an",
+             "fernseher ein", "tv ein", "tv an"},
+            FastPathResult("pantau_start_tv", {"activity": "Fernsehen"}),
+        ),
+        (
+            {"schalte den fernseher aus", "fernseher aus", "tv aus"},
+            FastPathResult("pantau_power_off_tv", {}),
+        ),
+        (
+            {"schalte das wohnzimmer ein", "wohnzimmer ein",
+             "licht im wohnzimmer an", "wohnzimmer licht an"},
+            FastPathResult("pantau_turn_on_room", {"room": "Wohnzimmer"}),
+        ),
+        (
+            {"schalte das wohnzimmer aus", "wohnzimmer aus",
+             "licht im wohnzimmer aus"},
+            FastPathResult("pantau_turn_off_room", {"room": "Wohnzimmer"}),
+        ),
+    ]
+    for phrase in phrases
 }
 
 
 def fast_path(text: str) -> FastPathResult | None:
-    return _LOOKUP.get(text.lower().strip())
+    return _ROUTES.get(text.lower().strip())
 ```
 
-The main loop checks fast_path first. Only on a miss does it invoke the agent. This also works as a latency benchmark: if the agent route takes > 2 s for a phrase that has a fast path, add it.
-
-### 4.5 FastMCP Facade — `pantau/home_mcp/server.py`
+### 4.6 FastMCP Facade — `pantau/home_mcp/server.py`
 
 ```python
 from __future__ import annotations
-import os
 from fastmcp import FastMCP
 from harmonyhub import HarmonyHubClient
 from huehub import HueBridgeClient, load_config as load_hue_config
 from sonospy import SonosClient
 from homekit import HomeKitClient, load_config as load_homekit_config
+from pantau.config import load_config
+
+cfg = load_config()
 
 mcp = FastMCP(
     name="pantau-home",
     instructions=(
         "Local smart-home tools for Pantau. "
-        "Use these for German voice commands. "
-        "Never expose raw device IDs or internal tool names."
+        "Use for German voice commands. "
+        "Never expose raw device IDs, tool names, or internal details."
     ),
 )
 
 
 @mcp.tool
 async def pantau_start_tv(activity: str = "Fernsehen") -> str:
-    """Startet eine Harmony-Aktivität. Standardmäßig 'Fernsehen'."""
-    async with HarmonyHubClient(os.environ["HARMONY_HUB_HOST"]) as hub:
+    """Startet eine Harmony-Aktivität. Standard: 'Fernsehen'."""
+    async with HarmonyHubClient(cfg.harmony.host) as hub:
         await hub.start_activity(activity)
     return f"Aktivität '{activity}' gestartet."
 
@@ -405,7 +529,7 @@ async def pantau_start_tv(activity: str = "Fernsehen") -> str:
 @mcp.tool
 async def pantau_power_off_tv() -> str:
     """Schaltet alle Harmony-Geräte aus."""
-    async with HarmonyHubClient(os.environ["HARMONY_HUB_HOST"]) as hub:
+    async with HarmonyHubClient(cfg.harmony.host) as hub:
         await hub.turn_off()
     return "Alle Geräte ausgeschaltet."
 
@@ -432,7 +556,7 @@ async def pantau_turn_off_room(room: str) -> str:
 
 @mcp.tool
 async def pantau_set_blinds(room: str, position: int) -> str:
-    """Steuert Rollos/Jalousien über HomeKit. position: 0 = geschlossen, 100 = offen."""
+    """Steuert Rollos über HomeKit. position: 0 = geschlossen, 100 = geöffnet."""
     if not 0 <= position <= 100:
         raise ValueError("position muss zwischen 0 und 100 liegen")
     entity_id = f"cover.{room.lower().replace(' ', '_')}"
@@ -443,7 +567,7 @@ async def pantau_set_blinds(room: str, position: int) -> str:
 
 @mcp.tool
 async def pantau_play_music(room: str, query: str) -> str:
-    """Spielt Musik über Sonos in einem Raum ab."""
+    """Spielt Musik über Sonos in einem Raum."""
     sonos = SonosClient()
     speaker = await sonos.find_speaker(room)
     await speaker.play_uri(query)
@@ -452,10 +576,10 @@ async def pantau_play_music(room: str, query: str) -> str:
 
 @mcp.tool
 async def pantau_set_volume(room: str, value_or_delta: int) -> str:
-    """Setzt oder ändert die Sonos-Lautstärke. Positive = lauter, negative = leiser."""
+    """Setzt oder ändert Sonos-Lautstärke. Positiv = lauter, negativ = leiser."""
     sonos = SonosClient()
     speaker = await sonos.find_speaker(room)
-    if value_or_delta > 0 and value_or_delta <= 100:
+    if 0 <= value_or_delta <= 100:
         await speaker.set_volume(value_or_delta)
     else:
         current = await speaker.get_volume()
@@ -464,16 +588,15 @@ async def pantau_set_volume(room: str, value_or_delta: int) -> str:
 
 
 if __name__ == "__main__":
-    mcp.run()  # stdio by default
+    mcp.run()   # stdio by default
 ```
 
-**HomeKit write tool safety note:** `homekit-py` disables MCP write tools by default. The facade already scopes access — only `pantau_set_blinds` calls HomeKit write operations, and only via the typed facade, never via raw HomeKit MCP exposure.
-
-### 4.6 Agent — `pantau/agent/runtime.py`
+### 4.7 Agent — `pantau/agent/runtime.py`
 
 ```python
 from pydantic_ai import Agent
 from pydantic_ai.mcp import MCPServerStdio
+from pantau.config import PantauConfig
 
 SYSTEM_PROMPT = """
 Du bist Pantau, ein lokaler Voice-Agent für Smart Home.
@@ -485,10 +608,10 @@ Aufgabe:
 - Nenne niemals Toolnamen, JSON, IDs oder interne Details.
 
 Zuordnung:
-- Fernseher, TV, Fernsehen, Apple TV, Receiver → Harmony (pantau_start_tv / pantau_power_off_tv)
-- Licht, Lampe, Szene, Raum → Hue (pantau_turn_on_room / pantau_turn_off_room)
-- Musik, Radio, Lautstärke, Pause, Weiter → Sonos (pantau_play_music / pantau_set_volume)
-- Rollo, Jalousie, Fensterblende, hoch, runter → HomeKit (pantau_set_blinds)
+- Fernseher, TV, Fernsehen, Apple TV, Receiver → pantau_start_tv / pantau_power_off_tv
+- Licht, Lampe, Szene, Raum → pantau_turn_on_room / pantau_turn_off_room
+- Musik, Radio, Lautstärke, Pause, Weiter → pantau_play_music / pantau_set_volume
+- Rollo, Jalousie, Fensterblende, hoch, runter → pantau_set_blinds
 
 Sicherheitsregeln:
 - Keine Websuche, keine Aktionen außerhalb Smart Home.
@@ -497,24 +620,31 @@ Sicherheitsregeln:
 """
 
 
-def build_agent() -> Agent:
+def build_agent(cfg: PantauConfig) -> Agent:
+    # resolve model string
+    if cfg.llm.provider == "ollama":
+        model_str = f"ollama:{cfg.llm.model}"
+    else:
+        model_str = f"openai:{cfg.llm.model}"
+
     home_mcp = MCPServerStdio(
         "python",
         args=["-m", "pantau.home_mcp.server"],
         timeout=10,
     )
     return Agent(
-        "openai:gpt-5.4-nano",
+        model_str,
         instructions=SYSTEM_PROMPT,
         toolsets=[home_mcp],
     )
 ```
 
-### 4.7 Main Loop — `pantau/main.py`
+### 4.8 Main Loop — `pantau/main.py`
 
 ```python
 import asyncio
 import logging
+from pantau.config import load_config
 from pantau.audio.wakeword import WakeWordListener
 from pantau.audio.stt import GermanSTT
 from pantau.audio.tts import PiperTTS
@@ -525,11 +655,11 @@ logger = logging.getLogger("pantau")
 
 
 async def main() -> None:
-    logger.info("Pantau startet …")
-    wakeword = WakeWordListener(model_path="hey_jarvis")  # replace with pantau.tflite
-    stt = GermanSTT(model_size="small", device="auto")
-    tts = PiperTTS(model_path="de_DE-thorsten-high.onnx")
-    agent = build_agent()
+    cfg      = load_config("config/pantau.yaml")   # also calls setup_logging()
+    wakeword = WakeWordListener(cfg.wake_word)
+    stt      = GermanSTT(cfg.stt)
+    tts      = PiperTTS(cfg.tts)
+    agent    = build_agent(cfg)
 
     await tts.speak("Pantau ist bereit.")
     logger.info("Warte auf Aktivierungswort …")
@@ -544,11 +674,10 @@ async def main() -> None:
                 continue
             logger.info("Erkannt: %s", text)
 
-            # --- fast path: no LLM call ---
+            # fast path: deterministic, no LLM
             match = fast_path(text)
             if match:
                 logger.info("Fast-path: %s %s", match.tool, match.args)
-                # call the MCP server directly (or via a thin local client)
                 response = await call_mcp_tool(match.tool, match.args)
             else:
                 async with agent.run_mcp_servers():
@@ -564,70 +693,15 @@ async def main() -> None:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO)
     asyncio.run(main())
 ```
 
-### 4.8 TTS — `pantau/audio/tts.py`
-
-```python
-import asyncio
-import io
-import sounddevice as sd
-import soundfile as sf
-from piper.voice import PiperVoice
-
-
-class PiperTTS:
-    def __init__(self, model_path: str = "de_DE-thorsten-high.onnx"):
-        self.voice = PiperVoice.load(model_path)
-
-    async def speak(self, text: str) -> None:
-        await asyncio.to_thread(self._synthesize_and_play, text)
-
-    def _synthesize_and_play(self, text: str) -> None:
-        buf = io.BytesIO()
-        with sf.SoundFile(
-            buf, mode="w", samplerate=22050, channels=1, format="WAV"
-        ) as f:
-            for audio_bytes in self.voice.synthesize_stream_raw(text):
-                f.buffer_write(audio_bytes, dtype="int16")
-        buf.seek(0)
-        data, sr = sf.read(buf, dtype="float32")
-        sd.play(data, sr, blocking=True)
-```
-
 ---
 
-## 5. Agent Routing Prompt (Tuned)
+## 5. Skills (optionale Domänenwissen-Injektion)
 
-```markdown
-Du bist Pantau, ein lokaler Voice-Agent für Smart Home.
-
-Aufgabe:
-- Interpretiere deutsche Sprachbefehle.
-- Rufe genau das passende Tool auf.
-- Antworte kurz und natürlich auf Deutsch.
-- Nenne niemals Toolnamen, JSON, IDs oder interne Details.
-
-Zuordnung:
-- Fernseher, TV, Fernsehen, Apple TV, Receiver → Harmony.
-- Licht, Lampe, Szene, Raumbeleuchtung → Hue.
-- Musik, Radio, Lautstärke, Pause, Weiter → Sonos.
-- Rollo, Jalousie, Fensterblende, hoch, runter, Prozent → HomeKit.
-
-Sicherheitsregeln:
-- Keine Websuche.
-- Keine Aktionen außerhalb Smart Home.
-- Bei unklaren Räumen oder Zielgeräten einmal kurz nachfragen.
-- Bei gefährlichen Aktionen nicht raten.
-```
-
----
-
-## 6. Skills (Optional Domain Knowledge Injection)
-
-Skills are plain markdown files loaded and appended to the system prompt at startup — no extra framework required.
+Skills sind Markdown-Dateien, die beim Start als zusätzliche System-Prompt-Sektionen
+geladen werden — kein Extra-Framework nötig.
 
 ```python
 # pantau/agent/skills.py
@@ -643,14 +717,14 @@ def load_skills(skills_dir: Path = Path("pantau/skills")) -> str:
 <!-- pantau/skills/hue_rooms.md -->
 ## Hue Raumzuordnung
 
-| Sprachbefehl              | Hue Gruppenname |
-|---------------------------|-----------------|
-| Wohnzimmer                | Living Room     |
-| Schlafzimmer              | Bedroom         |
-| Küche                     | Kitchen         |
-| Bad / Badezimmer          | Bathroom        |
-| Büro / Arbeitszimmer      | Office          |
-| Überall / Alle Räume      | (all groups)    |
+| Sprachbefehl          | Hue Gruppenname |
+|-----------------------|-----------------|
+| Wohnzimmer            | Living Room     |
+| Schlafzimmer          | Bedroom         |
+| Küche                 | Kitchen         |
+| Bad / Badezimmer      | Bathroom        |
+| Büro / Arbeitszimmer  | Office          |
+| Überall / Alle Räume  | (all groups)    |
 ```
 
 ```markdown
@@ -667,9 +741,7 @@ def load_skills(skills_dir: Path = Path("pantau/skills")) -> str:
 
 ---
 
-## 7. Evals — `evals/`
-
-**This layer is missing from most voice agent MVPs and should not be skipped.**
+## 6. Evals — `evals/`
 
 ```yaml
 # evals/commands_de.yaml
@@ -687,65 +759,27 @@ def load_skills(skills_dir: Path = Path("pantau/skills")) -> str:
 
 - input: "mach Musik im Büro leiser"
   expected_tool: pantau_set_volume
-  expected_args: {room: Büro}   # value_or_delta can vary
+  expected_args: {room: Büro}
 
 - input: "schalte alle Lichter aus"
   expected_tool: pantau_turn_off_room
-  expected_args: {room: Überall}
 ```
 
-```python
-# evals/test_agent_routing.py
-import pytest
-import yaml
-from pantau.agent.runtime import build_agent
-
-CASES = yaml.safe_load(open("evals/commands_de.yaml"))
-
-
-@pytest.mark.parametrize("case", CASES)
-async def test_routing(case):
-    agent = build_agent()
-    async with agent.run_mcp_servers():
-        result = await agent.run(case["input"])
-    # inspect result.tool_calls for correct tool + args
-    ...
-```
-
-Run evals before and after every LLM swap (cloud → local) to quantify routing accuracy loss.
+Run before and after every LLM swap (cloud → local) to quantify routing accuracy.
 
 ---
 
-## 8. Security / Network Constraints
-
-For the MVP, apply network constraints at the process level or via firewall:
-
-```markdown
-Allowed:
-  127.0.0.1          (MCP stdio / localhost HTTP)
-  LAN IPs            (Hue bridge, Harmony Hub, Sonos, HomeKit accessories)
-  cloud LLM endpoint (MVP only — one domain allowlist entry)
-
-Blocked:
-  Cloud STT
-  Cloud TTS
-  Web search / browser tools
-  Public MCP servers
-  Arbitrary shell execution
-```
-
-The pantau-ai agent must never be given shell, filesystem, or browser tools. The FastMCP facade acts as a safety perimeter: every action goes through a named, typed Python function with explicit validation.
-
----
-
-## 9. Dependencies — `pyproject.toml`
+## 7. Dependencies — `pyproject.toml`
 
 ```toml
 [project]
 name = "pantau"
-requires-python = ">=3.14"
+requires-python = ">=3.13"
 
 dependencies = [
+    # AppKit infrastructure
+    "appkit-commons>=0.1.0",
+
     # Agent
     "pydantic-ai-slim[openai]>=0.4.0",
     "fastmcp>=2.0.0",
@@ -758,17 +792,13 @@ dependencies = [
     "sounddevice>=0.4.6",
     "soundfile>=0.12.1",
     "numpy>=2.0",
-    "torch>=2.3",          # for Silero VAD
+    "torch>=2.3",
 
     # Smart home (jenreh repos)
     "harmonyhub-py @ git+https://github.com/jenreh/harmonyhub-py",
     "huehub-py @ git+https://github.com/jenreh/huehub-py",
     "sonos-py @ git+https://github.com/jenreh/sonos-py",
     "homekit-py @ git+https://github.com/jenreh/homekit-py",
-
-    # Utilities
-    "pydantic-settings>=2.0",
-    "pyyaml>=6.0",
 ]
 
 [dependency-groups]
@@ -778,65 +808,60 @@ dev = [
 ]
 ```
 
+> `pydantic-settings` and `pyyaml` are **not** listed directly — they are transitive
+> dependencies pulled in by `appkit-commons`.
+
 ---
 
-## 10. Latency Budget
+## 8. Latency Budget
 
 | Stage | Target |
-| --- | --- |
+|---|---|
 | Wake word detection | < 100 ms |
 | Activation chime ("Ja?") | < 200 ms |
-| VAD + audio capture | 1–4 s (depends on command length) |
-| STT (`small`, CPU) | ~ 1 s per 3 s audio |
+| VAD + audio capture | 1–4 s |
+| STT (`small`, CPU) | ~1 s per 3 s audio |
 | Fast-path check | < 1 ms |
-| LLM (gpt-5.4-nano, cloud) | 300–700 ms |
-| MCP tool execution | 50–300 ms (LAN) |
-| TTS synthesis + play | 200–400 ms |
-| **Total (fast path)** | **~2–4 s** |
-| **Total (LLM path)** | **~2.5–5 s** |
+| LLM round-trip (gpt-5.4-nano) | 300–700 ms |
+| MCP tool execution (LAN) | 50–300 ms |
+| TTS synthesis + playback | 200–400 ms |
+| **Total — fast path** | **~2–4 s** |
+| **Total — LLM path** | **~2.5–5 s** |
 
 ---
 
-## 11. Implementation Phases
+## 9. Network Constraints
 
-### Phase 1 — Text-only agent (validate routing)
+```
+Allowed:
+  127.0.0.1             MCP stdio / localhost
+  LAN IPs               Hue bridge, Harmony Hub, Sonos, HomeKit
+  cloud LLM endpoint    MVP only (one domain allowlist entry)
 
-Wire pydantic-ai to the FastMCP facade. Test commands as plain text. Run the eval set. Verify tool calls before adding any voice components.
-
-### Phase 2 — Voice MVP
-
-Add wake word, VAD, STT, TTS. Keep cloud LLM. Tune thresholds against real room noise.
-
-### Phase 3 — Local LLM
-
-Run Ollama + qwen3. Compare tool-selection accuracy against the eval set vs gpt-5.4-nano. Adjust the fast-path to compensate for any accuracy loss. Keep the FastMCP facade small — smaller tool surface = more reliable local model routing.
-
-### Phase 4 — Production hardening
-
-- Audit log for every tool call (tool name, args, response, latency)
-- Room/device alias expansion (skills files)
-- Confirmation prompts for risky actions (e.g. "Alle Geräte ausschalten?")
-- Latency metrics per stage (wake / STT / LLM / tool / TTS)
-- Fallback responses when a device is unreachable
-- "Barge-in" (interrupting agent TTS with a new wake word)
+Blocked:
+  Cloud STT / TTS
+  Web search / browser tools
+  Public MCP servers
+  Shell / filesystem tools
+```
 
 ---
 
-## 12. Comparison: What Each Review Contributed
+## 10. Implementation Phases
 
-| Topic | v1 (first review) | v2 addition (second review) |
-| --- | --- | --- |
-| Architecture diagram | ASCII art | ✔ (this document) |
-| Wake word | OpenWakeWord + async code | Same; added Porcupine tradeoff |
-| VAD | Inside faster-whisper only | **Silero VAD as own stage** |
-| STT code | Full async capture + transcribe | `condition_on_previous_text=False` |
-| MCP design | Option B only | **Option A vs B comparison** |
-| Fast-path router | ❌ | **Added — major latency win** |
-| Evals layer | ❌ | **Added — eval YAML + pytest** |
-| Project structure | Flat modules | **audio/ agent/ home_mcp/ evals/** |
-| LLM recommendation | Gemini 2.0 Flash | **gpt-5.4-nano with exact pricing** |
-| Python version | Not specified | **3.14+ (matches jenreh deps)** |
-| Network constraints | Config only | **Explicit allowed/blocked list** |
-| HomeKit write safety | Not mentioned | **Explicit safety note** |
-| Implementation phases | Simple roadmap | **4 structured phases** |
-| pydantic-deepagents | Skip for MVP | Same conclusion, expanded reasoning |
+**Phase 1 — Text-only agent**
+Wire pydantic-ai to the FastMCP facade. Test all commands as plain text.
+Run the eval set. Verify tool calls before adding any voice components.
+
+**Phase 2 — Voice MVP**
+Add wake word, VAD, STT, TTS. Keep cloud LLM.
+Tune OpenWakeWord threshold against real room noise.
+
+**Phase 3 — Local LLM**
+Run Ollama + qwen3. Compare eval accuracy vs gpt-5.4-nano.
+Extend fast-path routes to compensate for any accuracy loss.
+
+**Phase 4 — Production hardening**
+Audit log for every tool call · room/device alias expansion via skills ·
+confirmation prompts for risky actions · per-stage latency metrics ·
+fallback responses for unreachable devices · barge-in support.
