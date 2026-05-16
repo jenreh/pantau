@@ -4,8 +4,7 @@
 
 ## Architecture
 
-The full pipeline is shown in the interactive architecture diagram rendered earlier in this
-conversation (SVG, clickable nodes). Pipeline in sequence:
+The full pipeline is shown in the iarchitecture diagram [diagram](../docs/pantau_architecture.svg). Pipeline in sequence:
 
 ```
 Microphone
@@ -34,6 +33,7 @@ Internet is required only for the LLM in the MVP. Everything else runs on the lo
 Apache 2.0, fully local, custom model training pipeline available for "Pantau".
 
 Ramp-up plan:
+
 1. MVP placeholder: push-to-talk key or closest existing model ("hey jarvis")
 2. Train a custom `pantau.tflite` via the OpenWakeWord training pipeline
 3. Tune threshold with real room noise (start at 0.5)
@@ -171,8 +171,8 @@ from appkit_commons.configuration import BaseConfig, load_configuration, setup_l
 
 
 class SttConfig(BaseConfig):
-    model_size: str = "small"   # tiny | base | small | medium | large-v3
-    device: str = "auto"        # auto | cpu | cuda
+    model_size: str = "small"  # tiny | base | small | medium | large-v3
+    device: str = "auto"  # auto | cpu | cuda
     language: str = "de"
 
 
@@ -188,10 +188,10 @@ class WakeWordConfig(BaseConfig):
 
 
 class LlmConfig(BaseConfig):
-    provider: str = "openai"           # openai | ollama
+    provider: str = "openai"  # openai | ollama
     model: str = "gpt-5.4-nano"
-    api_key: str = "secret:openai_api_key"   # resolved from env OPENAI_API_KEY
-    base_url: str | None = None        # set for Ollama: http://localhost:11434/v1
+    api_key: str = "secret:openai_api_key"  # resolved from env OPENAI_API_KEY
+    base_url: str | None = None  # set for Ollama: http://localhost:11434/v1
 
 
 class HueConfig(BaseConfig):
@@ -307,7 +307,7 @@ from pantau.config import WakeWordConfig
 
 class WakeWordListener:
     SAMPLE_RATE = 16_000
-    CHUNK_MS = 80       # 1280 samples — OpenWakeWord requirement
+    CHUNK_MS = 80  # 1280 samples — OpenWakeWord requirement
 
     def __init__(self, cfg: WakeWordConfig) -> None:
         self.threshold = cfg.threshold
@@ -394,12 +394,13 @@ class GermanSTT:
         silence_limit = int(self.SILENCE_DURATION_S * sr / 512)
         max_chunks = int(self.MAX_DURATION_S * sr / 512)
 
-        with sd.InputStream(samplerate=sr, channels=1, dtype="float32",
-                            blocksize=512) as stream:
+        with sd.InputStream(
+            samplerate=sr, channels=1, dtype="float32", blocksize=512
+        ) as stream:
             for _ in range(max_chunks):
                 chunk, _ = stream.read(512)
                 frames.append(chunk[:, 0])
-                rms = float(np.sqrt(np.mean(chunk ** 2)))
+                rms = float(np.sqrt(np.mean(chunk**2)))
                 if rms < self.SILENCE_THRESHOLD:
                     silent_chunks += 1
                     if silent_chunks >= silence_limit:
@@ -439,8 +440,9 @@ class PiperTTS:
 
     def _synthesize_and_play(self, text: str) -> None:
         buf = io.BytesIO()
-        with sf.SoundFile(buf, mode="w", samplerate=22050,
-                          channels=1, format="WAV") as f:
+        with sf.SoundFile(
+            buf, mode="w", samplerate=22050, channels=1, format="WAV"
+        ) as f:
             for audio_bytes in self.voice.synthesize_stream_raw(text):
                 f.buffer_write(audio_bytes, dtype="int16")
         buf.seek(0)
@@ -468,8 +470,13 @@ _ROUTES: dict[str, FastPathResult] = {
     phrase: result
     for phrases, result in [
         (
-            {"schalte den fernseher ein", "mach den fernseher an",
-             "fernseher ein", "tv ein", "tv an"},
+            {
+                "schalte den fernseher ein",
+                "mach den fernseher an",
+                "fernseher ein",
+                "tv ein",
+                "tv an",
+            },
             FastPathResult("pantau_start_tv", {"activity": "Fernsehen"}),
         ),
         (
@@ -477,13 +484,16 @@ _ROUTES: dict[str, FastPathResult] = {
             FastPathResult("pantau_power_off_tv", {}),
         ),
         (
-            {"schalte das wohnzimmer ein", "wohnzimmer ein",
-             "licht im wohnzimmer an", "wohnzimmer licht an"},
+            {
+                "schalte das wohnzimmer ein",
+                "wohnzimmer ein",
+                "licht im wohnzimmer an",
+                "wohnzimmer licht an",
+            },
             FastPathResult("pantau_turn_on_room", {"room": "Wohnzimmer"}),
         ),
         (
-            {"schalte das wohnzimmer aus", "wohnzimmer aus",
-             "licht im wohnzimmer aus"},
+            {"schalte das wohnzimmer aus", "wohnzimmer aus", "licht im wohnzimmer aus"},
             FastPathResult("pantau_turn_off_room", {"room": "Wohnzimmer"}),
         ),
     ]
@@ -588,7 +598,7 @@ async def pantau_set_volume(room: str, value_or_delta: int) -> str:
 
 
 if __name__ == "__main__":
-    mcp.run()   # stdio by default
+    mcp.run()  # stdio by default
 ```
 
 ### 4.7 Agent — `pantau/agent/runtime.py`
@@ -655,11 +665,11 @@ logger = logging.getLogger("pantau")
 
 
 async def main() -> None:
-    cfg      = load_config("config/pantau.yaml")   # also calls setup_logging()
+    cfg = load_config("config/pantau.yaml")  # also calls setup_logging()
     wakeword = WakeWordListener(cfg.wake_word)
-    stt      = GermanSTT(cfg.stt)
-    tts      = PiperTTS(cfg.tts)
-    agent    = build_agent(cfg)
+    stt = GermanSTT(cfg.stt)
+    tts = PiperTTS(cfg.tts)
+    agent = build_agent(cfg)
 
     await tts.speak("Pantau ist bereit.")
     logger.info("Warte auf Aktivierungswort …")

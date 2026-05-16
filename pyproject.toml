@@ -1,9 +1,9 @@
 [project]
-name = "app"
-version = "1.0.0"
-description = "Project template for python apps. Change as needed."
+name = "pantau"
+version = "0.1.0"
+description = "Local voice agent for smart home control."
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = "==3.14.*"
 license = { text = "MIT" }
 authors = [{ name = "Jens Rehpöhler" }]
 keywords = []
@@ -16,12 +16,15 @@ classifiers = [
 ]
 
 dependencies = [
-    "fastmcp==3.3.1",
-    "typer==0.25.1",
-    "rich==15.0.0",
+    "appkit-commons>=1.10.2",
+    "fastmcp>=3.2.4",
+    "harmonyhub-py",
+    "homekit-py",
+    "huehub-py",
     "pydantic==2.13.4",
+    "pydantic-ai>=1.97.0",
     "pydantic-settings==2.14.1",
-    "aiosqlite==0.22.1",
+    "sonos-py",
 ]
 
 [dependency-groups]
@@ -38,20 +41,26 @@ dev = [
     "types-PyYAML==6.0.12.20260510",
 ]
 
+
+[tool.uv.sources]
+huehub-py = { path = "../huehub-py" }
+sonos-py = { path = "../sonos-py" }
+homekit-py = { path = "../homekit-py" }
+harmonyhub-py = { path = "../harmonyhub-py" }
+
 [project.scripts]
-# app = "app.cli.main:app"
-# app-mcp = "app.mcp_server.server:main"
+pantau-mcp = "pantau.home_mcp.server:run"
 
 [project.urls]
 Homepage = "https://github.com/jenreh/python-kit"
 Repository = "https://github.com/jenreh/python-kit"
 
 [tool.hatch.build.targets.wheel]
-packages = ["app"]
+packages = ["pantau"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "/app",
+    "/pantau",
     "README.md",
     "pyproject.toml",
 ]
@@ -204,7 +213,7 @@ docstring-code-line-length = "dynamic"
 exclude = ["*.pyi"]
 
 [tool.ruff.lint.isort]
-known-local-folder = ["sonos"]
+known-local-folder = ["pantau"]
 
 [tool.pytest.ini_options]
 cache_dir = ".cache/pytest"
@@ -212,6 +221,7 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 markers = [
     "sonos_live: requires real Sonos hardware on the network",
+    "integration: requires external services (OPENAI_API_KEY, real hardware)",
 ]
 
 [tool.mypy]
@@ -232,8 +242,8 @@ exclude = [
 
 [tool.coverage.run]
 branch = true
-source = ["app"]
-omit = []
+source = ["pantau"]
+omit = ["pantau/audio/*"]
 
 [tool.coverage.report]
 exclude_lines = ["if TYPE_CHECKING:", "if __name__ == .__main__.:", "pragma: no cover"]
