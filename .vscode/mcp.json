@@ -34,6 +34,39 @@
                 "run",
                 "pantau-mcp"
             ]
+        },
+        "harmonyhub": {
+            "command": "uv",
+            "args": [
+                "run",
+                "harmony-mcp"
+            ],
+            "cwd": "/Users/jens/Workspace/projekte/harmonyhub-py"
+        },
+        "huehub": {
+            "command": "uv",
+            "args": [
+                "run",
+                "hue-mcp"
+            ],
+            "cwd": "/Users/jens/Workspace/projekte/huehub-py"
+        },
+        "homekit": {
+            "command": "uv",
+            "args": [
+                "run",
+                "homekit-mcp"
+            ],
+            "cwd": "/Users/jens/Workspace/projekte/homekit-py"
+        },
+        "sonos": {
+            "command": "uv",
+            "args": [
+                "run",
+                "sonos",
+                "mcp"
+            ],
+            "cwd": "/Users/jens/Workspace/projekte/sonos-py"
         }
     }
 }

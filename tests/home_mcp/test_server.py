@@ -11,9 +11,9 @@ async def _list_components() -> tuple[set[str], set[str]]:
     return {tool.name for tool in tools}, {str(resource.uri) for resource in resources}
 
 
-def test_home_mcp_composes_legacy_and_native_servers() -> None:
+def test_home_mcp_does_not_publish_child_servers() -> None:
     tool_names, resource_uris = asyncio.run(_list_components())
 
-    assert "harmony_get_status" in tool_names
-    assert "hue_get_bridge_info" in tool_names
-    assert "harmony://status" in resource_uris
+    assert "harmony_get_status" not in tool_names
+    assert "hue_get_bridge_info" not in tool_names
+    assert "harmony://status" not in resource_uris
