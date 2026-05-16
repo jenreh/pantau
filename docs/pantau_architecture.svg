@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg width="100%" height="100%" viewBox="0 0 680 860" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" xml:space="preserve" xmlns:serif="http://www.serif.com/" style="fill-rule:evenodd;clip-rule:evenodd;">
+    <g transform="matrix(1,0,0,1.666667,-7.5,-161)">
+        <path d="M320,474L320,510" style="fill:none;fill-rule:nonzero;stroke:rgb(115,114,108);stroke-width:1.5px;"/>
+    </g>
+    <g>
+        <g transform="matrix(1,0,0,1,314,19)">
+            <text x="-36.576px" y="0px" style="font-family:'Helvetica';font-size:14px;fill:rgb(68,68,65);">Microphone</text>
+        </g>
+        <g transform="matrix(1,0,0,1,314,35)">
+            <text x="-61.04px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(95,94,90);">sounddevice / PyAudio</text>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,-6,-27)">
+        <path d="M320,74L320,94" style="fill:none;fill-rule:nonzero;stroke:rgb(115,114,108);stroke-width:1.5px;"/>
+    </g>
+    <g>
+        <g transform="matrix(1,0,0,1,-6,-27)">
+            <path d="M420,102L420,142C420,146.415 416.415,150 412,150L228,150C223.585,150 220,146.415 220,142L220,102C220,97.585 223.585,94 228,94L412,94C416.415,94 420,97.585 420,102Z" style="fill:rgb(225,245,238);stroke:rgb(15,110,86);stroke-width:0.5px;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,314,85)">
+            <text x="-34.754px" y="0px" style="font-family:'Helvetica';font-size:14px;fill:rgb(8,80,65);">W<tspan x="-22.053px -14.267px " y="0px 0px ">ak</tspan>e word</text>
+        </g>
+        <g transform="matrix(1,0,0,1,314,103)">
+            <text x="-72.302px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(15,110,86);">OpenW<tspan x="-32.06px -25.386px " y="0px 0px ">ak</tspan>eW<tspan x="-1.597px 5.077px " y="0px 0px ">or</tspan>d · &quot;Pantau&quot;</text>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,-6,-27)">
+        <path d="M320,150L320,170" style="fill:none;fill-rule:nonzero;stroke:rgb(115,114,108);stroke-width:1.5px;"/>
+    </g>
+    <g>
+        <g transform="matrix(1,0,0,1,-6,-27)">
+            <path d="M420,178L420,218C420,222.415 416.415,226 412,226L228,226C223.585,226 220,222.415 220,218L220,178C220,173.585 223.585,170 228,170L412,170C416.415,170 420,173.585 420,178Z" style="fill:rgb(225,245,238);stroke:rgb(15,110,86);stroke-width:0.5px;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,314,161)">
+            <text x="-46.57px" y="0px" style="font-family:'Helvetica';font-size:14px;fill:rgb(8,80,65);">V<tspan x="-38.264px -28.926px " y="0px 0px ">AD</tspan> / endpoint</text>
+        </g>
+        <g transform="matrix(1,0,0,1,314,179)">
+            <text x="-70.591px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(15,110,86);">Silero V<tspan x="-29.458px -21.454px " y="0px 0px ">AD</tspan> · silence detect</text>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,-6,-27)">
+        <path d="M320,226L320,246" style="fill:none;fill-rule:nonzero;stroke:rgb(115,114,108);stroke-width:1.5px;"/>
+    </g>
+    <g>
+        <g transform="matrix(1,0,0,1,-6,-27)">
+            <path d="M420,254L420,294C420,298.415 416.415,302 412,302L228,302C223.585,302 220,298.415 220,294L220,254C220,249.585 223.585,246 228,246L412,246C416.415,246 420,249.585 420,254Z" style="fill:rgb(225,245,238);stroke:rgb(15,110,86);stroke-width:0.5px;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,314,237)">
+            <text x="-34.101px" y="0px" style="font-family:'Helvetica';font-size:14px;fill:rgb(8,80,65);">STT<tspan x="-7.906px -4.016px " y="0px 0px "> (</tspan>local)</text>
+        </g>
+        <g transform="matrix(1,0,0,1,314,255)">
+            <text x="-64.354px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(15,110,86);">faster-whisper · German</text>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,-6,-27)">
+        <path d="M320,302L320,322" style="fill:none;fill-rule:nonzero;stroke:rgb(115,114,108);stroke-width:1.5px;"/>
+    </g>
+    <g>
+        <g transform="matrix(1,0,0,1,-6,-27)">
+            <path d="M420,330L420,370C420,374.415 416.415,378 412,378L228,378C223.585,378 220,374.415 220,370L220,330C220,325.585 223.585,322 228,322L412,322C416.415,322 420,325.585 420,330Z" style="fill:rgb(250,238,218);stroke:rgb(133,79,11);stroke-width:0.5px;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,314,313)">
+            <text x="-49.8px" y="0px" style="font-family:'Helvetica';font-size:14px;fill:rgb(99,56,6);">Fast-path router</text>
+        </g>
+        <g transform="matrix(1,0,0,1,314,331)">
+            <text x="-77.364px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(133,79,11);">deterministic · bypasses LLM</text>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,-6,-27)">
+        <path d="M320,378L320,406" style="fill:none;fill-rule:nonzero;stroke:rgb(115,114,108);stroke-width:1.5px;"/>
+    </g>
+    <g transform="matrix(1,0,0,0.904762,-6,6.333333)">
+        <path d="M420,350L500,350L500,560L450,560" style="fill:none;fill-rule:nonzero;stroke:rgb(115,114,108);stroke-opacity:0.5;stroke-width:1px;stroke-dasharray:5,3;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,484,313)">
+        <text x="-21.343px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(61,61,58);">shortcut</text>
+    </g>
+    <g>
+        <g transform="matrix(1,0,0,1,-6,-27)">
+            <path d="M455,414L455,466C455,470.415 451.415,474 447,474L193,474C188.585,474 185,470.415 185,466L185,414C185,409.585 188.585,406 193,406L447,406C451.415,406 455,409.585 455,414Z" style="fill:rgb(238,237,254);stroke:rgb(83,74,183);stroke-width:0.5px;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,314,401)">
+            <text x="-54.486px" y="0px" style="font-family:'Helvetica';font-size:14px;fill:rgb(60,52,137);">Pydantic <tspan x="2.334px 11.672px " y="0px 0px ">AI</tspan> agent</text>
+        </g>
+        <g transform="matrix(1,0,0,1,314,419)">
+            <text x="-81.712px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(83,74,183);">gpt-5.4-nano</text>
+            <text x="-10.327px" y="0px" style="font-family:'LucidaGrande', 'Lucida Grande', sans-serif;font-weight:500;font-size:12px;fill:rgb(83,74,183);">→</text>
+            <text x="5.007px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(83,74,183);">Ollama qwen3</text>
+        </g>
+        <g transform="matrix(1,0,0,1,314,435)">
+            <g transform="matrix(12,0,0,12,46.476562,0)">
+            </g>
+            <g transform="matrix(12,0,0,12,49.810547,0)">
+            </g>
+            <text x="-72.486px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(83,74,183);">(MVP<tspan x="-42.697px -39.363px " y="0px 0px "> c</tspan>loud · target: of<tspan x="46.477px " y="0px ">ﬂ</tspan>ine)</text>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,17,-35)">
+        <g transform="matrix(1,0,0,1,-6,-27)">
+            <path d="M140,408L140,432C140,437.519 135.519,442 130,442L40,442C34.481,442 30,437.519 30,432L30,408C30,402.481 34.481,398 40,398L130,398C135.519,398 140,402.481 140,408Z" style="fill:none;stroke:rgb(115,114,108);stroke-opacity:0.6;stroke-width:1px;stroke-dasharray:4,3;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,79,389)">
+            <text x="-29.016px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(61,61,58);">Cloud LLM</text>
+        </g>
+        <g transform="matrix(1,0,0,1,79,405)">
+            <text x="-29.566px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(61,61,58);">(MVP<tspan x="0.223px 3.557px " y="0px 0px "> o</tspan>nly)</text>
+        </g>
+    </g>
+    <g transform="matrix(0.786786,0.580117,-0.59978,0.799204,291.86661,-54.216831)">
+        <path d="M185,430L142,422" style="fill:none;fill-rule:nonzero;stroke:rgb(115,114,108);stroke-opacity:0.5;stroke-width:1px;stroke-dasharray:4,3;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,-7.5,-27)">
+        <path d="M320,474L320,510" style="fill:none;fill-rule:nonzero;stroke:rgb(115,114,108);stroke-width:1.5px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,-7.5,62)">
+        <path d="M320,474L320,510" style="fill:none;fill-rule:nonzero;stroke:rgb(115,114,108);stroke-width:1.5px;"/>
+    </g>
+    <g>
+        <g transform="matrix(1,0,0,1,-6,-27)">
+            <path d="M455,518L455,558C455,562.415 451.415,566 447,566L193,566C188.585,566 185,562.415 185,558L185,518C185,513.585 188.585,510 193,510L447,510C451.415,510 455,513.585 455,518Z" style="fill:rgb(238,237,254);stroke:rgb(83,74,183);stroke-width:0.5px;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,314,503)">
+            <text x="-52.008px" y="0px" style="font-family:'Helvetica';font-size:14px;fill:rgb(60,52,137);">FastMCP<tspan x="6.084px 9.974px " y="0px 0px "> f</tspan>acade</text>
+        </g>
+        <g transform="matrix(1,0,0,1,314,521)">
+            <text x="-85.386px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(83,74,183);">pantau-home · 7 high-level tools</text>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,21,0)">
+        <g transform="matrix(1,0,0,1,-6,-27)">
+            <path d="M180,608L180,648C180,652.415 176.415,656 172,656L58,656C53.585,656 50,652.415 50,648L50,608C50,603.585 53.585,600 58,600L172,600C176.415,600 180,603.585 180,608Z" style="fill:rgb(250,236,231);stroke:rgb(153,60,29);stroke-width:0.5px;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,109,592)">
+            <text x="-28.396px" y="0px" style="font-family:'Helvetica';font-size:14px;fill:rgb(113,43,19);">Harmony</text>
+        </g>
+        <g transform="matrix(1,0,0,1,109,610)">
+            <text x="-35.675px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(153,60,29);">TV · activities</text>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,-20,0)">
+        <g transform="matrix(1,0,0,1,-6,-27)">
+            <path d="M380,608L380,648C380,652.415 376.415,656 372,656L258,656C253.585,656 250,652.415 250,648L250,608C250,603.585 253.585,600 258,600L372,600C376.415,600 380,603.585 380,608Z" style="fill:rgb(250,236,231);stroke:rgb(153,60,29);stroke-width:0.5px;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,309,592)">
+            <text x="-12.841px" y="0px" style="font-family:'Helvetica';font-size:14px;fill:rgb(113,43,19);">Hue</text>
+        </g>
+        <g transform="matrix(1,0,0,1,309,610)">
+            <text x="-59.689px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(153,60,29);">lights · scenes · rooms</text>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,-76,0)">
+        <g transform="matrix(1,0,0,1,-6,-27)">
+            <path d="M590,608L590,648C590,652.415 586.415,656 582,656L468,656C463.585,656 460,652.415 460,648L460,608C460,603.585 463.585,600 468,600L582,600C586.415,600 590,603.585 590,608Z" style="fill:rgb(250,236,231);stroke:rgb(153,60,29);stroke-width:0.5px;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,519,592)">
+            <text x="-19.848px" y="0px" style="font-family:'Helvetica';font-size:14px;fill:rgb(113,43,19);">Sonos</text>
+        </g>
+        <g transform="matrix(1,0,0,1,519,610)">
+            <text x="-48.023px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(153,60,29);">playback · volume</text>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,-42,-1)">
+        <g transform="matrix(1,0,0,1,-6,-27)">
+            <path d="M670,608L670,648C670,652.415 666.415,656 662,656L588,656C583.585,656 580,652.415 580,648L580,608C580,603.585 583.585,600 588,600L662,600C666.415,600 670,603.585 670,608Z" style="fill:rgb(250,236,231);stroke:rgb(153,60,29);stroke-width:0.5px;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,619,592)">
+            <text x="-26.841px" y="0px" style="font-family:'Helvetica';font-size:14px;fill:rgb(113,43,19);">HomeKit</text>
+        </g>
+        <g transform="matrix(1,0,0,1,619,610)">
+            <text x="-15.677px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(153,60,29);">blinds</text>
+        </g>
+    </g>
+    <g transform="matrix(0.885714,0,0,1,30.571429,-27)">
+        <path d="M670,680L670,698C670,701.311 666.965,704 663.226,704L46.774,704C43.035,704 40,701.311 40,698L40,680C40,676.689 43.035,674 46.774,674L663.226,674C666.965,674 670,676.689 670,680Z" style="fill:none;stroke:rgb(115,114,108);stroke-opacity:0.4;stroke-width:0.5px;stroke-dasharray:4,3;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,349,667)">
+        <text x="-115.723px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(61,61,58);">Local network (LAN) — no internet required</text>
+    </g>
+    <g transform="matrix(1.09375,0,0,1,-26.625,-27)">
+        <defs>
+            <mask id="Mask">
+            
+                <g transform="matrix(0.914286,-0,-0,1,24.342857,27)"><image id="_Image1" width="680px" height="860px" xlink:href="data:image/png;base64,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"/>
+                </g>
+            </mask>
+        </defs>
+        <g mask="url(#Mask)">
+            <path d="M185,440L60,440L60,740L220,740" style="fill:none;fill-rule:nonzero;stroke:rgb(115,114,108);stroke-width:1px;"/>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,42,563)">
+        <text x="-24.683px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(61,61,58);">response</text>
+    </g>
+    <g>
+        <g transform="matrix(1,0,0,1,-6,-27)">
+            <path d="M420,726L420,766C420,770.415 416.415,774 412,774L228,774C223.585,774 220,770.415 220,766L220,726C220,721.585 223.585,718 228,718L412,718C416.415,718 420,721.585 420,726Z" style="fill:rgb(225,245,238);stroke:rgb(15,110,86);stroke-width:0.5px;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,314,710)">
+            <text x="-34.224px" y="0px" style="font-family:'Helvetica';font-size:14px;fill:rgb(8,80,65);">TTS (local)</text>
+        </g>
+        <g transform="matrix(1,0,0,1,314,728)">
+            <text x="-61.031px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(15,110,86);">Piper · de_DE-thorsten</text>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,-7.5,-27)">
+        <path d="M320,774L320,794" style="fill:none;fill-rule:nonzero;stroke:rgb(115,114,108);stroke-width:1.5px;"/>
+    </g>
+    <g>
+        <g transform="matrix(1,0,0,1,-6,-27)">
+            <path d="M420,802L420,830C420,834.415 416.415,838 412,838L228,838C223.585,838 220,834.415 220,830L220,802C220,797.585 223.585,794 228,794L412,794C416.415,794 420,797.585 420,802Z" style="fill:rgb(241,239,232);stroke:rgb(95,94,90);stroke-width:0.5px;"/>
+        </g>
+        <g transform="matrix(1,0,0,1,314,783)">
+            <text x="-26.072px" y="0px" style="font-family:'Helvetica';font-size:14px;fill:rgb(68,68,65);">Speaker</text>
+        </g>
+        <g transform="matrix(1,0,0,1,314,799)">
+            <text x="-61.04px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(95,94,90);">sounddevice / PyAudio</text>
+        </g>
+    </g>
+    <g transform="matrix(1,0,0,1,77,23)">
+        <path d="M50,810L50,816C50,817.104 49.104,818 48,818L42,818C40.896,818 40,817.104 40,816L40,810C40,808.896 40.896,808 42,808L48,808C49.104,808 50,808.896 50,810Z" style="fill:rgb(225,245,238);stroke:rgb(15,110,86);stroke-width:0.5px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,133,841)">
+        <g transform="matrix(12,0,0,12,48.486328,0)">
+        </g>
+        <g transform="matrix(12,0,0,12,51.820312,0)">
+        </g>
+        <text x="0px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(61,61,58);">Local · of<tspan x="48.486px " y="0px ">ﬂ</tspan>ine</text>
+    </g>
+    <g transform="matrix(1,0,0,1,77,23)">
+        <path d="M140,810L140,816C140,817.104 139.104,818 138,818L132,818C130.896,818 130,817.104 130,816L130,810C130,808.896 130.896,808 132,808L138,808C139.104,808 140,808.896 140,810Z" style="fill:rgb(238,237,254);stroke:rgb(83,74,183);stroke-width:0.5px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,223,841)">
+        <text x="0px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(61,61,58);">Agent layer</text>
+    </g>
+    <g transform="matrix(1,0,0,1,77,23)">
+        <path d="M230,810L230,816C230,817.104 229.104,818 228,818L222,818C220.896,818 220,817.104 220,816L220,810C220,808.896 220.896,808 222,808L228,808C229.104,808 230,808.896 230,810Z" style="fill:rgb(250,236,231);stroke:rgb(153,60,29);stroke-width:0.5px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,313,841)">
+        <text x="0px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(61,61,58);">MCP<tspan x="26.455px 29.789px " y="0px 0px "> s</tspan>ervers</text>
+    </g>
+    <g transform="matrix(1,0,0,1,77,23)">
+        <path d="M326,810L326,816C326,817.104 325.104,818 324,818L318,818C316.896,818 316,817.104 316,816L316,810C316,808.896 316.896,808 318,808L324,808C325.104,808 326,808.896 326,810Z" style="fill:rgb(250,238,218);stroke:rgb(133,79,11);stroke-width:0.5px;"/>
+    </g>
+    <g transform="matrix(1,0,0,1,409,841)">
+        <text x="0px" y="0px" style="font-family:'Helvetica';font-size:12px;fill:rgb(61,61,58);">Fast-path (no LLM)</text>
+    </g>
+    <path d="M134,573L304,538L304,571" style="fill:none;"/>
+</svg>
