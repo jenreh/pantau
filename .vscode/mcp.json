@@ -28,5 +28,12 @@
                 "duckduckgo-mcp-server"
             ]
         },
+        "pantau-mcp": {
+            "command": "uv",
+            "args": [
+                "run",
+                "pantau-mcp"
+            ]
+        }
     }
 }

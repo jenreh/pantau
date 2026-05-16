@@ -1,0 +1,41 @@
+profile: default
+
+app:
+  name: pantau
+  version: 0.1.0
+  logging: logging.yaml
+  environment: development
+
+  wake_word:
+    model: models/pantau.tflite
+    threshold: 0.5
+    post_wake_timeout_s: 6.0
+
+  stt:
+    model_size: small
+    device: auto
+    language: de
+
+  tts:
+    model: models/de_DE-thorsten-high.onnx
+    speak_rate: 1.0
+
+  llm:
+    provider: openai
+    model: gpt-5.4-nano
+    api_key: secret:pt-openai-api-key
+    # api_key resolved via secret:openai_api_key → env var OPENAI_API_KEY
+
+  hue:
+    bridge_ip: 192.168.1.2
+    # api_key resolved via secret:hue_api_key
+
+  harmony:
+    host: 192.168.1.50
+
+  sonos:
+    discovery_timeout_s: 5
+
+  homekit:
+    allow_write_tools: true
+    # pin resolved via secret:homekit_pin
