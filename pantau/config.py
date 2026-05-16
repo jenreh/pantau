@@ -37,6 +37,20 @@ class LlmConfig(BaseConfig):
     base_url: str | None = None
 
 
+class McpServerConfig(BaseConfig):
+    name: str
+    command: str | None = None
+    args: list[str] = []
+    cwd: str | None = None
+
+
+class McpConfig(BaseConfig):
+    servers: list[McpServerConfig] = [
+        McpServerConfig(name="harmonyhub", args=["-m", "harmonyhub.mcp_server"]),
+        McpServerConfig(name="huehub", args=["-m", "huehub.mcp_server"]),
+    ]
+
+
 class ApplicationConfig(BaseConfig):
     version: str
     name: str
@@ -46,6 +60,7 @@ class ApplicationConfig(BaseConfig):
     stt: SttConfig = SttConfig()
     tts: TtsConfig = TtsConfig()
     llm: LlmConfig = LlmConfig()
+    mcp: McpConfig = McpConfig()
 
 
 @lru_cache(maxsize=1)

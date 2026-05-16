@@ -1,6 +1,10 @@
 version = 1
 revision = 3
-requires-python = "==3.14.*"
+requires-python = ">=3.14"
+resolution-markers = [
+    "python_full_version >= '3.15'",
+    "python_full_version < '3.15'",
+]
 
 [[package]]
 name = "ag-ui-protocol"
@@ -1129,7 +1133,7 @@ wheels = [
 
 [[package]]
 name = "harmonyhub-py"
-version = "0.2.4"
+version = "0.2.5"
 source = { editable = "../harmonyhub-py" }
 dependencies = [
     { name = "fastmcp" },

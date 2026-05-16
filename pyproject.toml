@@ -3,7 +3,7 @@ name = "pantau"
 version = "0.1.0"
 description = "Local voice agent for smart home control."
 readme = "README.md"
-requires-python = "==3.14.*"
+requires-python = ">=3.14"
 license = { text = "MIT" }
 authors = [{ name = "Jens Rehpöhler" }]
 keywords = []
@@ -49,6 +49,7 @@ homekit-py = { path = "../homekit-py", editable = true }
 harmonyhub-py = { path = "../harmonyhub-py", editable = true }
 
 [project.scripts]
+pantau = "pantau.main:main"
 pantau-mcp = "pantau.home_mcp.server:run"
 
 [project.urls]
@@ -261,6 +262,9 @@ branch = true
 source = ["pantau"]
 omit = [
     "pantau/audio/*",
+    "pantau/main.py",
+    "pantau/agent/runtime.py",
+    "pantau/agent/prompts.py",
     "*/tests/*",
     "*/__pycache__/*",
 ]

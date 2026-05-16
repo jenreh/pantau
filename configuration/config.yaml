@@ -24,18 +24,27 @@ app:
     provider: openai
     model: gpt-5.4-nano
     api_key: secret:pt-openai-api-key
-    # api_key resolved via secret:openai_api_key → env var OPENAI_API_KEY
+    base_url: https://api.openai.com/v1
 
-  hue:
-    bridge_ip: 192.168.1.2
-    # api_key resolved via secret:hue_api_key
-
-  harmony:
-    host: 192.168.1.50
-
-  sonos:
-    discovery_timeout_s: 5
-
-  homekit:
-    allow_write_tools: true
-    # pin resolved via secret:homekit_pin
+  mcp:
+    servers:
+      - name: harmonyhub
+        command: uv
+        args:
+          - run
+          - harmony-mcp
+      - name: huehub
+        command: uv
+        args:
+          - run
+          - hue-mcp
+      # Optional external MCP servers:
+      # - name: code-reasoning
+      #   command: npx
+      #   args:
+      #     - -y
+      #     - '@mettamatt/code-reasoning'
+      # - name: duckduckgo
+      #   command: uvx
+      #   args:
+      #     - duckduckgo-mcp-server
