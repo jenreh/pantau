@@ -37,24 +37,6 @@ class LlmConfig(BaseConfig):
     base_url: str | None = None
 
 
-class HueConfig(BaseConfig):
-    bridge_ip: str = "192.168.1.2"
-    api_key: str = "secret:hue_api_key"
-
-
-class HarmonyConfig(BaseConfig):
-    host: str = "192.168.1.50"
-
-
-class SonosConfig(BaseConfig):
-    discovery_timeout_s: int = 5
-
-
-class HomekitConfig(BaseConfig):
-    pin: str = "secret:homekit_pin"
-    allow_write_tools: bool = True
-
-
 class ApplicationConfig(BaseConfig):
     version: str
     name: str
@@ -64,10 +46,6 @@ class ApplicationConfig(BaseConfig):
     stt: SttConfig = SttConfig()
     tts: TtsConfig = TtsConfig()
     llm: LlmConfig = LlmConfig()
-    hue: HueConfig = HueConfig()
-    harmony: HarmonyConfig = HarmonyConfig()
-    sonos: SonosConfig = SonosConfig()
-    homekit: HomekitConfig = HomekitConfig()
 
 
 @lru_cache(maxsize=1)
