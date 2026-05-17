@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import shutil
 import sys
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -30,10 +31,11 @@ def _build_stdio_server_parameters(server: McpServerConfig) -> StdioServerParame
 
 
 def _build_stdio_mcp_toolset(server: McpServerConfig) -> MCPToolset:
+    params = _build_stdio_server_parameters(server)
     return MCPToolset(
         StdioTransport(
-            command=_build_stdio_server_parameters(server).command,
-            args=_build_stdio_server_parameters(server).args,
+            command=params.command,
+            args=params.args,
             cwd=server.cwd,
         )
     )
@@ -68,20 +70,28 @@ async def execute_mcp_tool(
 
     for server in servers:
         try:
+            logger.debug(
+                "audit: calling tool=%s server=%s args=%s",
+                tool_name,
+                server.name,
+                dict(arguments),
+            )
             result = await _call_tool_on_server(server, tool_name, arguments)
             if result is None:
                 continue
 
             logger.info(
-                "Executed MCP tool '%s' on server '%s'",
+                "audit: tool=%s server=%s args=%s result=%s",
                 tool_name,
                 server.name,
+                dict(arguments),
+                result,
             )
             return result
         except Exception as exc:
             last_error = exc
             logger.warning(
-                "Failed MCP tool '%s' on server '%s': %s",
+                "audit: tool=%s server=%s FAILED: %s",
                 tool_name,
                 server.name,
                 exc,
@@ -93,21 +103,21 @@ async def execute_mcp_tool(
     raise LookupError(f"No configured MCP server exposes tool {tool_name!r}")
 
 
-async def resolve_available_mcp_servers(
+def resolve_available_mcp_servers(
     servers: Sequence[McpServerConfig],
 ) -> list[McpServerConfig]:
     available_servers: list[McpServerConfig] = []
 
     for server in servers:
-        try:
-            async with _build_stdio_mcp_toolset(server):
-                available_servers.append(server)
-        except Exception as exc:
+        command = server.command or sys.executable
+        if shutil.which(command) is None:
             logger.warning(
-                "Skipping unavailable MCP server '%s': %s",
+                "Skipping unavailable MCP server '%s': command not found: %s",
                 server.name,
-                exc,
+                command,
             )
+            continue
+        available_servers.append(server)
 
     return available_servers
 

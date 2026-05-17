@@ -8,7 +8,9 @@ import yaml
 
 logger = logging.getLogger(__name__)
 
-_RULES_PATH = Path("configuration/fast_path_rules.yaml")
+_RULES_PATH = (
+    Path(__file__).parent.parent.parent / "configuration" / "fast_path_rules.yaml"
+)
 
 
 @dataclass

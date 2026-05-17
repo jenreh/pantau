@@ -110,11 +110,6 @@ async def test_session_reuses_agent_across_requests(
 
     fake_agent = FakeAgent()
 
-    async def fake_resolve_available_mcp_servers(
-        servers: list[McpServerConfig],
-    ) -> list[McpServerConfig]:
-        return servers
-
     monkeypatch.setattr(
         "pantau.session.service_registry",
         FakeRegistry,
@@ -122,7 +117,7 @@ async def test_session_reuses_agent_across_requests(
     monkeypatch.setattr("pantau.session.fast_path", lambda text: None)
     monkeypatch.setattr(
         "pantau.session.resolve_available_mcp_servers",
-        fake_resolve_available_mcp_servers,
+        lambda servers: servers,
     )
     monkeypatch.setattr(
         "pantau.session.build_agent",
@@ -203,11 +198,6 @@ async def test_session_records_fast_path_turns_for_later_llm_context(
     ) -> dict[str, str]:
         return {"status": "ok"}
 
-    async def fake_resolve_available_mcp_servers(
-        servers: list[McpServerConfig],
-    ) -> list[McpServerConfig]:
-        return servers
-
     monkeypatch.setattr("pantau.session.service_registry", FakeRegistry)
     monkeypatch.setattr(
         "pantau.session.fast_path", lambda text: next(fast_path_results)
@@ -215,7 +205,7 @@ async def test_session_records_fast_path_turns_for_later_llm_context(
     monkeypatch.setattr("pantau.session.execute_mcp_tool", fake_execute_mcp_tool)
     monkeypatch.setattr(
         "pantau.session.resolve_available_mcp_servers",
-        fake_resolve_available_mcp_servers,
+        lambda servers: servers,
     )
     monkeypatch.setattr(
         "pantau.session.build_agent", lambda app_cfg, mcp_servers: fake_agent

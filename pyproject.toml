@@ -3,7 +3,7 @@ name = "pantau"
 version = "0.1.0"
 description = "Local voice agent for smart home control."
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.14,<3.15"
 license = { text = "MIT" }
 authors = [{ name = "Jens Rehpöhler" }]
 keywords = []
@@ -17,14 +17,21 @@ classifiers = [
 
 dependencies = [
     "appkit-commons>=1.10.2",
+    "faster-whisper>=1.2.1",
     "fastmcp>=3.3.1",
     "harmonyhub-py",
     "homekit-py",
     "huehub-py",
+    "onnxruntime>=1.26.0",
+    "openwakeword==0.6.0",
+    "piper-tts>=1.4.2",
     "pydantic==2.13.4",
     "pydantic-ai>=1.97.0",
     "pydantic-settings==2.14.1",
+    "silero-vad>=6.2.1",
     "sonos-py",
+    "sounddevice>=0.5.5",
+    "soundfile>=0.13.1",
 ]
 
 [dependency-groups]
@@ -42,6 +49,9 @@ dev = [
 ]
 
 
+[tool.uv]
+environments = ["sys_platform == 'darwin'"]
+
 [tool.uv.sources]
 huehub-py = { path = "../huehub-py", editable = true }
 sonos-py = { path = "../sonos-py", editable = true }
@@ -50,7 +60,6 @@ harmonyhub-py = { path = "../harmonyhub-py", editable = true }
 
 [project.scripts]
 pantau = "pantau.main:main"
-pantau-mcp = "pantau.home_mcp.server:run"
 
 [project.urls]
 Homepage = "https://github.com/jenreh/python-kit"
@@ -261,8 +270,6 @@ exclude = [
 branch = true
 source = ["pantau"]
 omit = [
-    "pantau/audio/*",
-    "pantau/main.py",
     "pantau/agent/prompts.py",
     "*/tests/*",
     "*/__pycache__/*",

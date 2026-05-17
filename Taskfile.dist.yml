@@ -63,6 +63,27 @@ tasks:
     desc: Install dependencies using uv
     cmd: uv sync
 
+  download-models:
+    desc: Download piper TTS model (de_DE-thorsten-high)
+    vars:
+      MODEL_DIR: models
+      HF_BASE: https://huggingface.co/rhasspy/piper-voices/resolve/main/de/de_DE/thorsten/high
+    cmds:
+      - mkdir -p {{.MODEL_DIR}}
+      - |
+        if [ ! -f "{{.MODEL_DIR}}/de_DE-thorsten-high.onnx" ]; then
+          echo "Downloading de_DE-thorsten-high TTS model..."
+          curl -L -o "{{.MODEL_DIR}}/de_DE-thorsten-high.onnx" "{{.HF_BASE}}/de_DE-thorsten-high.onnx"
+          curl -L -o "{{.MODEL_DIR}}/de_DE-thorsten-high.onnx.json" "{{.HF_BASE}}/de_DE-thorsten-high.onnx.json"
+          echo "Downloaded to {{.MODEL_DIR}}/de_DE-thorsten-high.onnx"
+        else
+          echo "TTS model already present."
+        fi
+      - |
+        echo "Downloading openwakeword pretrained models..."
+        uv run python -c "from openwakeword.utils import download_models; download_models()"
+        echo "Openwakeword models ready."
+
   clean:
     desc: Clean cache and build artifacts
     ignore_error: true

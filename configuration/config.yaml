@@ -7,12 +7,12 @@ app:
   environment: development
 
   wake_word:
-    model: models/pantau.tflite
+    model: models/pantau_x.tflite
     threshold: 0.5
     post_wake_timeout_s: 6.0
 
   stt:
-    model_size: small
+    model_size: medium
     device: auto
     language: de
 
@@ -28,23 +28,25 @@ app:
 
   mcp:
     servers:
-      - name: harmonyhub
+      - name: harmony
         command: uv
         args:
           - run
           - harmony-mcp
-      - name: huehub
-        command: uv
+          - --no-banner
+      - name: hue
+        command: uvx
         args:
-          - run
-          - hue-mcp
-      # Optional external MCP servers:
-      # - name: code-reasoning
-      #   command: npx
-      #   args:
-      #     - -y
-      #     - '@mettamatt/code-reasoning'
-      # - name: duckduckgo
-      #   command: uvx
-      #   args:
-      #     - duckduckgo-mcp-server
+          - huehub-py
+      - name: homekit
+        command: uvx
+        args:
+          - homekit-py
+      - name: sonos
+        command: uvx
+        arg:
+          - sonos-py
+      - name: duckduckgo
+        command: uvx
+        args:
+          - duckduckgo-mcp-server

@@ -1,18 +1,18 @@
 - input: "schalte den Fernseher ein"
-  expected_tool: pantau_start_tv
+  expected_tool: harmony_start_activity
   expected_args: {activity: Fernsehen}
 
 - input: "mach das Wohnzimmer an"
-  expected_tool: pantau_turn_on_room
+  expected_tool: hue_set_room_on
   expected_args: {room: Wohnzimmer}
 
-- input: "Rollo im Schlafzimmer auf 30 Prozent"
-  expected_tool: pantau_set_blinds
-  expected_args: {room: Schlafzimmer, position: 30}
+- input: "schalte den Fernseher aus"
+  expected_tool: harmony_power_off
 
-- input: "mach Musik im Büro leiser"
-  expected_tool: pantau_set_volume
-  expected_args: {room: Büro}
+- input: "schalte auf ZDF"
+  expected_tool: harmony_set_channel
+  expected_args: {channel: 2}
 
-- input: "schalte alle Lichter aus"
-  expected_tool: pantau_turn_off_room
+- input: "Musik im Wohnzimmer lauter stellen auf 60"
+  expected_tool: sonos_set_volume
+  expected_args: {value: 60}

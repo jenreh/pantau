@@ -105,8 +105,7 @@ def test_build_agent_uses_ollama_provider_config() -> None:
     assert mcp_toolsets[1].client.transport.args == ["-m", "huehub.mcp_server"]
 
 
-@pytest.mark.asyncio
-async def test_resolve_available_mcp_servers_skips_unavailable_servers(
+def test_resolve_available_mcp_servers_skips_unavailable_servers(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     cfg = ApplicationConfig(
@@ -116,31 +115,19 @@ async def test_resolve_available_mcp_servers_skips_unavailable_servers(
         llm=LlmConfig(),
         mcp=McpConfig(
             servers=[
-                McpServerConfig(name="broken", args=["-m", "broken.server"]),
-                McpServerConfig(name="working", args=["-m", "working.server"]),
+                McpServerConfig(name="broken", command="missing-cmd", args=[]),
+                McpServerConfig(name="working", command="present-cmd", args=[]),
             ],
         ),
     )
 
-    class FakeToolset:
-        def __init__(self, server_name: str) -> None:
-            self.server_name = server_name
-
-        async def __aenter__(self) -> FakeToolset:
-            if self.server_name == "broken":
-                raise RuntimeError("Connection closed")
-            return self
-
-        async def __aexit__(self, exc_type: object, exc: object, tb: object) -> None:
-            return None
-
     monkeypatch.setattr(
-        runtime,
-        "_build_stdio_mcp_toolset",
-        lambda server: FakeToolset(server.name),
+        runtime.shutil,
+        "which",
+        lambda cmd: None if cmd == "missing-cmd" else f"/usr/bin/{cmd}",
     )
 
-    available_servers = await resolve_available_mcp_servers(cfg.mcp.servers)
+    available_servers = resolve_available_mcp_servers(cfg.mcp.servers)
 
     assert [server.name for server in available_servers] == ["working"]
 

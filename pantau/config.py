@@ -27,13 +27,13 @@ class TtsConfig(BaseConfig):
 class WakeWordConfig(BaseConfig):
     model: str = "models/pantau.tflite"
     threshold: float = 0.5
-    post_wake_timeout_s: float = 6.0
+    post_wake_timeout_s: float = 3.0
 
 
 class LlmConfig(BaseConfig):
-    provider: str = "openai"
-    model: str = "gpt-5.4-nano"
-    api_key: str = "secret:openai_api_key"
+    provider: str = ""
+    model: str = ""
+    api_key: str = ""
     base_url: str | None = None
 
 
@@ -45,10 +45,7 @@ class McpServerConfig(BaseConfig):
 
 
 class McpConfig(BaseConfig):
-    servers: list[McpServerConfig] = [
-        McpServerConfig(name="harmonyhub", args=["-m", "harmonyhub.mcp_server"]),
-        McpServerConfig(name="huehub", args=["-m", "huehub.mcp_server"]),
-    ]
+    servers: list[McpServerConfig] = []
 
 
 class ApplicationConfig(BaseConfig):
@@ -56,11 +53,12 @@ class ApplicationConfig(BaseConfig):
     name: str
     logging: str
     environment: Environment | None = Environment.local
+
     wake_word: WakeWordConfig = WakeWordConfig()
     stt: SttConfig = SttConfig()
     tts: TtsConfig = TtsConfig()
     llm: LlmConfig = LlmConfig()
-    mcp: McpConfig = McpConfig()
+    mcp: McpConfig | None = None
 
 
 @lru_cache(maxsize=1)
@@ -68,5 +66,5 @@ def configure() -> Configuration[ApplicationConfig]:
     logger.debug("--- Configuring application settings ---")
     return service_registry().configure(
         ApplicationConfig,
-        env_file="/.env",
+        env_file=".env",
     )

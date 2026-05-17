@@ -26,19 +26,7 @@ loggers:
     level: INFO
     handlers: [console]
     propagate: 0
-  rxconfig:
-    level: DEBUG
-    handlers: [console]
-    propagate: 0
-  app:
-    level: DEBUG
-    handlers: [console]
-    propagate: 0
-  appkit_assistant:
-    level: DEBUG
-    handlers: [console]
-    propagate: 0
-  appkit_imagecreator:
+  pantau:
     level: DEBUG
     handlers: [console]
     propagate: 0
@@ -46,28 +34,8 @@ loggers:
     level: DEBUG
     handlers: [console]
     propagate: 0
-  appkit_ui:
-    level: DEBUG
-    handlers: [console]
-    propagate: 0
-  appkit_user:
-    level: DEBUG
-    handlers: [console]
-    propagate: 0
-  appkit_mantine:
-    level: DEBUG
-    handlers: [console]
-    propagate: 0
-  server:
-    level: INFO
-    handlers: [console]
-    propagate: 0
   uvicorn:
     level: INFO
-    handlers: [console]
-    propagate: 0
-  azure.core.pipeline.policies.http_logging_policy:
-    level: WARNING
     handlers: [console]
     propagate: 0
   httpx:
@@ -78,19 +46,7 @@ loggers:
     level: WARNING
     handlers: [console]
     propagate: 0
-  alembic.autogenerate.compare:
-    level: WARNING
-    handlers: [console]
-    propagate: 0
-  alembic.ddl.postgresql:
-    level: WARNING
-    handlers: [console]
-    propagate: 0
-  mcp.server:
-    level: WARNING
-    handlers: [console]
-    propagate: 0
-  mcp.client:
+  fastmcp:
     level: WARNING
     handlers: [console]
     propagate: 0

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import logging
+import time
 from contextlib import AsyncExitStack
 from typing import Any
 
@@ -63,7 +64,7 @@ class PantauSession:
         if self.cfg is None:
             self.cfg = service_registry().get(ApplicationConfig)
 
-        self.available_mcp_servers = await resolve_available_mcp_servers(
+        self.available_mcp_servers = resolve_available_mcp_servers(
             self.cfg.mcp.servers,
         )
         self.agent = build_agent(self.cfg, mcp_servers=self.available_mcp_servers)
@@ -81,8 +82,13 @@ class PantauSession:
         if self.cfg is None or self.agent is None:
             raise RuntimeError("PantauSession must be entered before use")
 
+        t0 = time.monotonic()
         fast_path_response = await _process_fast_path(self.cfg, text)
         if fast_path_response is not None:
+            logger.info(
+                "latency: fast-path=%.3fs",
+                time.monotonic() - t0,
+            )
             _append_fast_path_history(self.message_history, text, fast_path_response)
             return fast_path_response
 
@@ -91,6 +97,10 @@ class PantauSession:
             len(self.available_mcp_servers),
         )
         result = await self.agent.run(text, message_history=self.message_history)
+        logger.info(
+            "latency: llm-path=%.3fs",
+            time.monotonic() - t0,
+        )
         self.message_history = result.all_messages()
         return str(result.output)
 
@@ -104,7 +114,7 @@ async def process(text: str, session: PantauSession | None = None) -> str:
     if fast_path_response is not None:
         return fast_path_response
 
-    available_mcp_servers = await resolve_available_mcp_servers(cfg.mcp.servers)
+    available_mcp_servers = resolve_available_mcp_servers(cfg.mcp.servers)
     agent = build_agent(cfg, mcp_servers=available_mcp_servers)
     logger.info(
         "llm-path: routing to agent with %d available MCP server(s)",
