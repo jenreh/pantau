@@ -2,11 +2,16 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import string
 import sys
 
 logger = logging.getLogger(__name__)
 
 _STOP_PHRASES = frozenset({"beende dich", "auf wiedersehen", "exit"})
+
+
+def _is_stop_phrase(text: str) -> bool:
+    return text.strip().lower().rstrip(string.punctuation) in _STOP_PHRASES
 
 
 async def _repl() -> None:
@@ -23,7 +28,7 @@ async def _repl() -> None:
 
             if not text:
                 continue
-            if text.lower() in _STOP_PHRASES:
+            if _is_stop_phrase(text):
                 break
             try:
                 response = await process(text, session=session)
@@ -43,6 +48,7 @@ async def _voice_loop() -> None:
     from pantau.session import PantauSession
 
     cfg = service_registry().get(ApplicationConfig)
+    logger.debug("Starting voice loop with configuration: %s", cfg)
     wakeword = WakeWordListener(cfg.wake_word)
     stt = GermanSTT(cfg.stt)
     tts = PiperTTS(cfg.tts)
@@ -54,28 +60,31 @@ async def _voice_loop() -> None:
         while True:
             try:
                 await wakeword.listen()
-                logger.debug("Wake word detected, starting voice interaction")
+                logger.debug("Wake word detected, entering follow-up loop")
                 await tts.speak("Ja?")
 
-                text = await stt.record_and_transcribe()
-                logger.debug("Transcription complete: %s", text)
-                if not text:
-                    wakeword.stop()
-                    logger.debug("No speech detected, returning to wake word listening")
-                    continue
+                while True:
+                    text = await stt.record_and_transcribe(
+                        initial_silence_timeout_s=cfg.wake_word.post_wake_timeout_s,
+                    )
+                    logger.debug("Transcription complete: %s", text)
+                    if not text:
+                        logger.debug(
+                            "No speech detected, returning to wake word listening"
+                        )
+                        break
 
-                if text.strip().lower() in _STOP_PHRASES:
-                    logger.info("Stop phrase detected, shutting down")
-                    await tts.speak("Auf Wiedersehen.")
-                    wakeword.stop()
-                    break
+                    if _is_stop_phrase(text):
+                        logger.info("Stop phrase detected, shutting down")
+                        await tts.speak("Auf Wiedersehen.")
+                        return
 
-                response = await session.process(text)
-                logger.debug("Response: %s", response)
-                await tts.speak(response)
+                    response = await session.process(text)
+                    logger.debug("Response: %s", response)
+                    await tts.speak(response)
+
             except KeyboardInterrupt:
                 logger.debug("Voice loop stopped by user")
-                wakeword.stop()
                 break
             except Exception:
                 logger.exception("Unhandled error in voice loop")

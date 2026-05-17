@@ -9,6 +9,7 @@ from appkit_commons.configuration.configuration import (
     Environment,
 )
 from appkit_commons.registry import service_registry
+from pydantic import Field
 
 logger = logging.getLogger(__name__)
 
@@ -27,12 +28,12 @@ class TtsConfig(BaseConfig):
 class WakeWordConfig(BaseConfig):
     model: str = "models/pantau.tflite"
     threshold: float = 0.5
-    post_wake_timeout_s: float = 3.0
+    post_wake_timeout_s: float = 6.0
 
 
 class LlmConfig(BaseConfig):
-    provider: str = ""
-    model: str = ""
+    provider: str = "openai"
+    model: str = "gpt-5.4-nano"
     api_key: str = ""
     base_url: str | None = None
 
@@ -45,7 +46,12 @@ class McpServerConfig(BaseConfig):
 
 
 class McpConfig(BaseConfig):
-    servers: list[McpServerConfig] = []
+    servers: list[McpServerConfig] = Field(
+        default_factory=lambda: [
+            McpServerConfig(name="harmonyhub", args=["-m", "harmonyhub.mcp_server"]),
+            McpServerConfig(name="huehub", args=["-m", "huehub.mcp_server"]),
+        ]
+    )
 
 
 class ApplicationConfig(BaseConfig):
@@ -58,7 +64,7 @@ class ApplicationConfig(BaseConfig):
     stt: SttConfig = SttConfig()
     tts: TtsConfig = TtsConfig()
     llm: LlmConfig = LlmConfig()
-    mcp: McpConfig | None = None
+    mcp: McpConfig = Field(default_factory=McpConfig)
 
 
 @lru_cache(maxsize=1)

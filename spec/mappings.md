@@ -1,6 +1,8 @@
 
 TV Channels:
 
+Tools: harmony
+
 | Channel | Alias | Channel |
 | ------- | ----- | --- |
 | ARD | ard, a r d, ah er de, das erste, erste, erstes, ard das erste, erstes deutsches fernsehen | 1 |
@@ -19,3 +21,15 @@ TV Channels:
 | ProSieben MAXX | prosieben maxx, pro sieben maxx, pro 7 maxx, pro7 maxx, p7 maxx, sieben maxx, maxx | 14 |
 | NTV | ntv, n-tv, n tv, en te vau, n te vau, nachrichtensender ntv | 15 |
 | Tele 5 | tele 5, tele fünf, telefünf, tele five, tele5, t5 | 19 |
+
+Commands:
+
+harmony, sonos,
+
+| Command | Alias | Action |
+| ------- | ----- | ------ |
+| lauter | lauter, mach lauter, etwas lauter, bitte lauter, lautstärke hoch, lautstärke erhöhen, dreh lauter, dreh mal lauter, ton lauter, sound lauter, volume up, louder | Prüfe, welches Gerät aktuell läuft: `harmony.status`, `sonos.status`. Dann auf dem aktiven Gerät die Lautstärke erhöhen. |
+| leiser | leiser, mach leiser, etwas leiser, bitte leiser, lautstärke runter, lautstärke verringern, dreh leiser, dreh mal leiser, ton leiser, sound leiser, volume down, quieter | Prüfe, welches Gerät aktuell läuft: `harmony.status`, `sonos.status`. Dann auf dem aktiven Gerät die Lautstärke verringern. |
+| stumm | stumm, mach stumm, ton aus, mute, muten, stummschalten, bitte stumm, lautlos, mach lautlos, sound aus, audio aus | Prüfe, welches Gerät aktuell läuft: `harmony.status`, `sonos.status`. Dann auf dem aktiven Gerät den Ton stummschalten. |
+| ton ein | ton ein, mach ton an, ton wieder an, laut wieder an, sound an, audio an, mute aus, stumm aus, stummschaltung aus, nicht mehr stumm, entstummen, unmute | Prüfe, welches Gerät aktuell läuft: `harmony.status`, `sonos.status`. Dann auf dem aktiven Gerät die Stummschaltung deaktivieren. |
+| aus | aus, ausschalten, mach aus, alles aus, gerät aus, fernseher aus, tv aus, musik aus, stop, stoppen, beenden, mach alles aus | Prüfe, welches Gerät aktuell läuft: `harmony.status`, `sonos.status`. Dann das aktive Gerät ausschalten oder die laufende Wiedergabe stoppen. |

@@ -143,6 +143,5 @@ async def test_voice_loop_stops_on_beende_dich() -> None:
         await _voice_loop()
 
     mock_session.process.assert_not_called()
-    mock_ww.stop.assert_called_once()
     spoken = [call.args[0] for call in mock_tts.speak.call_args_list]
     assert any("Wiedersehen" in s for s in spoken)

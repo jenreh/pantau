@@ -39,6 +39,7 @@ class WakeWordListener:
         )
 
     def _detect(self) -> None:
+        self._model.reset()
         with sd.InputStream(
             samplerate=_SAMPLE_RATE, channels=1, dtype="int16"
         ) as stream:
@@ -55,4 +56,5 @@ class WakeWordListener:
         self._stop_event.set()
 
     async def listen(self) -> None:
+        self._stop_event.clear()
         await asyncio.to_thread(self._detect)

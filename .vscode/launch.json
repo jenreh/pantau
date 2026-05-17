@@ -2,36 +2,15 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Reflex Debug",
+            "name": "Python: voice_main",
             "type": "debugpy",
             "request": "launch",
-            "module": "reflex",
+            "program": "${workspaceFolder}/pantau/main.py",
             "args": [
-                "run"
+                "--voice"
             ],
             "console": "integratedTerminal",
-            "cwd": "${workspaceFolder}",
-            "env": {
-                //"REFLEX_USE_TURBOPACK": "1",
-                //"VITE_FORCE_FULL_RELOAD": "1",
-                "VITE_EXPERIMENTAL_HMR": "1"
-            },
-            "autoReload": {
-                "enable": true,
-                "pattern": [
-                    "**/*.py"
-                ]
-            },
-            "justMyCode": false
-        },
-        {
-            "name": "Attach to Reflex",
-            "type": "debugpy",
-            "request": "attach",
-            "connect": {
-                "host": "localhost",
-                "port": 5678
-            }
+            "cwd": "${workspaceFolder}"
         }
     ]
 }

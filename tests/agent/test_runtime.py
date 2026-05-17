@@ -137,7 +137,7 @@ def test_build_agent_can_use_filtered_mcp_servers() -> None:
         version="0.1.0",
         name="pantau",
         logging="logging.yaml",
-        llm=LlmConfig(),
+        llm=LlmConfig(api_key="test-key"),
         mcp=McpConfig(
             servers=[
                 McpServerConfig(

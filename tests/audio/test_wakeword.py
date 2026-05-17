@@ -83,3 +83,4 @@ def test_detect_exits_on_threshold_met(listener: object) -> None:
         listener._detect()
 
     assert reads == 3
+    listener._model.reset.assert_called_once()

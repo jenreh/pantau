@@ -33,11 +33,15 @@ class GermanSTT:
             "GermanSTT model loaded: size=%s device=%s", cfg.model_size, device
         )
 
-    def _record(self) -> np.ndarray:
+    def _record(self, initial_silence_timeout_s: float = _SILENCE_STOP_S) -> np.ndarray:
         frames: list[np.ndarray] = []
         silence_frames = 0
+        speech_started = False
         max_frames = int(_MAX_DURATION_S * _SAMPLE_RATE / _CHUNK_FRAMES)
-        silence_stop_frames = int(_SILENCE_STOP_S * _SAMPLE_RATE / _CHUNK_FRAMES)
+        initial_silence_limit = int(
+            initial_silence_timeout_s * _SAMPLE_RATE / _CHUNK_FRAMES
+        )
+        post_speech_silence_limit = int(_SILENCE_STOP_S * _SAMPLE_RATE / _CHUNK_FRAMES)
 
         with sd.InputStream(
             samplerate=_SAMPLE_RATE, channels=1, dtype="float32"
@@ -46,12 +50,18 @@ class GermanSTT:
                 chunk, _ = stream.read(_CHUNK_FRAMES)
                 mono = chunk[:, 0]
                 frames.append(mono.copy())
-                if not self._vad.is_speech(mono):
-                    silence_frames += 1
-                    if silence_frames >= silence_stop_frames:
-                        break
-                else:
+                if self._vad.is_speech(mono):
+                    speech_started = True
                     silence_frames = 0
+                else:
+                    silence_frames += 1
+                    limit = (
+                        post_speech_silence_limit
+                        if speech_started
+                        else initial_silence_limit
+                    )
+                    if silence_frames >= limit:
+                        break
 
         return np.concatenate(frames)
 
@@ -65,8 +75,10 @@ class GermanSTT:
         )
         return " ".join(seg.text.strip() for seg in segments).strip()
 
-    async def record_and_transcribe(self) -> str:
-        audio = await asyncio.to_thread(self._record)
+    async def record_and_transcribe(
+        self, initial_silence_timeout_s: float = _SILENCE_STOP_S
+    ) -> str:
+        audio = await asyncio.to_thread(self._record, initial_silence_timeout_s)
         text = await asyncio.to_thread(self._transcribe, audio)
         logger.info("STT transcribed: %s", text)
         return text

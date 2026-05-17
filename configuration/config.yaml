@@ -31,22 +31,27 @@ app:
       - name: harmony
         command: uv
         args:
+          - --quiet
           - run
           - harmony-mcp
           - --no-banner
       - name: hue
         command: uvx
         args:
+          - --quiet
           - huehub-py
       - name: homekit
         command: uvx
         args:
+          - --quiet
           - homekit-py
       - name: sonos
         command: uvx
-        arg:
+        args:
+          - --quiet
           - sonos-py
       - name: duckduckgo
         command: uvx
         args:
+          - --quiet
           - duckduckgo-mcp-server
