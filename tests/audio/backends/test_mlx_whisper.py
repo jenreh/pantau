@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import platform
 from unittest.mock import MagicMock, patch
 
@@ -30,6 +31,25 @@ def test_mlx_adapter_raises_on_non_apple_silicon() -> None:
     platform.system() != "Darwin" or "arm" not in platform.machine().lower(),
     reason="mlx_whisper requires Apple Silicon macOS",
 )
+def test_mlx_adapter_preloads_model_in_dedicated_thread(cfg: SttConfig) -> None:
+    import mlx.core as mx
+    from mlx_whisper.transcribe import ModelHolder
+
+    from pantau.audio.backends.mlx_whisper import MlxWhisperAdapter
+
+    mock_model = MagicMock()
+    with patch.object(ModelHolder, "get_model", return_value=mock_model) as mock_get:
+        adapter = MlxWhisperAdapter(cfg)
+
+    mock_get.assert_called_once_with("mlx-community/whisper-small-mlx", mx.float16)
+    assert adapter._model is mock_model
+    assert adapter._executor._max_workers == 1
+
+
+@pytest.mark.skipif(
+    platform.system() != "Darwin" or "arm" not in platform.machine().lower(),
+    reason="mlx_whisper requires Apple Silicon macOS",
+)
 def test_mlx_adapter_transcribe_calls_mlx_whisper(cfg: SttConfig) -> None:
     from pantau.audio.backends.mlx_whisper import MlxWhisperAdapter
 
@@ -45,6 +65,35 @@ def test_mlx_adapter_transcribe_calls_mlx_whisper(cfg: SttConfig) -> None:
 
     assert result == "Hallo Welt"
     mock_transcribe.assert_called_once()
+
+
+@pytest.mark.skipif(
+    platform.system() != "Darwin" or "arm" not in platform.machine().lower(),
+    reason="mlx_whisper requires Apple Silicon macOS",
+)
+def test_mlx_record_and_transcribe_uses_dedicated_executor(cfg: SttConfig) -> None:
+    import concurrent.futures
+
+    from pantau.audio.backends.mlx_whisper import MlxWhisperAdapter
+
+    with patch.object(MlxWhisperAdapter, "__init__", return_value=None):
+        adapter = MlxWhisperAdapter.__new__(MlxWhisperAdapter)
+        adapter._cfg = cfg
+        adapter._repo = "mlx-community/whisper-small-mlx"
+        adapter._vad = MagicMock()
+        adapter._model = MagicMock()
+        adapter._executor = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+
+    audio = np.zeros(16000, dtype=np.float32)
+
+    with (
+        patch.object(adapter, "_record", return_value=audio),
+        patch.object(adapter, "_transcribe", return_value="Hallo") as mock_transcribe,
+    ):
+        result = asyncio.run(adapter.record_and_transcribe())
+
+    assert result.text == "Hallo"
+    mock_transcribe.assert_called_once_with(audio)
 
 
 def test_mlx_model_mapping_small() -> None:

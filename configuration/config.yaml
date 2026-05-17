@@ -13,6 +13,7 @@ app:
 
   stt:
     provider: faster_whisper
+    # provider: mlx_whisper
     model_size: small
     device: auto
     language: de

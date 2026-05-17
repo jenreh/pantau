@@ -21,6 +21,7 @@ class FasterWhisperAdapter(BatchAdapter):
         segments, _ = self._model.transcribe(
             audio,
             language=self._cfg.language,
+            initial_prompt=self._cfg.initial_prompt or None,
             beam_size=1,
             vad_filter=True,
             condition_on_previous_text=False,

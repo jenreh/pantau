@@ -23,6 +23,7 @@ class SttConfig(BaseConfig):
     silence_stop_s: float = 0.4  # post-speech silence before cutoff (was hardcoded 1.2)
     api_key: str = ""  # picovoice access key
     intent_enabled: bool = False
+    initial_prompt: str = "Schalte das Licht ein. Schalte den Fernseher aus. Mach lauter. Wohnzimmer, Schlafzimmer, Küche."
 
 
 class TtsConfig(BaseConfig):
