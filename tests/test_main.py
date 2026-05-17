@@ -30,6 +30,13 @@ async def test_process_executes_fast_path_tool_and_returns_response(
             assert config_type is ApplicationConfig
             return cfg
 
+    class FakeAgent:
+        async def __aenter__(self) -> FakeAgent:
+            return self
+
+        async def __aexit__(self, exc_type: object, exc: object, tb: object) -> None:
+            return None
+
     async def fake_execute_mcp_tool(
         servers: list[McpServerConfig],
         tool_name: str,
@@ -38,10 +45,7 @@ async def test_process_executes_fast_path_tool_and_returns_response(
         executed.append(([server.name for server in servers], tool_name, arguments))
         return {"status": "ok"}
 
-    monkeypatch.setattr(
-        "pantau.session.service_registry",
-        FakeRegistry,
-    )
+    monkeypatch.setattr("pantau.session.service_registry", FakeRegistry)
     monkeypatch.setattr(
         "pantau.session.fast_path",
         lambda text: FastPathResult(
@@ -53,6 +57,12 @@ async def test_process_executes_fast_path_tool_and_returns_response(
         ),
     )
     monkeypatch.setattr("pantau.session.execute_mcp_tool", fake_execute_mcp_tool)
+    monkeypatch.setattr(
+        "pantau.session.resolve_available_mcp_servers", lambda servers: servers
+    )
+    monkeypatch.setattr(
+        "pantau.session.build_agent", lambda app_cfg, mcp_servers: FakeAgent()
+    )
 
     result = await process("schalte das licht im flur ein")
 

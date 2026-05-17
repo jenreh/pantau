@@ -37,7 +37,8 @@ def _build_stdio_mcp_toolset(server: McpServerConfig) -> MCPToolset:
             command=params.command,
             args=params.args,
             cwd=server.cwd,
-        )
+        ),
+        init_timeout=server.init_timeout,
     )
 
 

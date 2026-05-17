@@ -12,9 +12,12 @@ app:
     post_wake_timeout_s: 6.0
 
   stt:
-    model_size: medium
+    provider: faster_whisper
+    model_size: small
     device: auto
     language: de
+    silence_stop_s: 0.4
+    intent_enabled: false
 
   tts:
     model: models/de_DE-thorsten-high.onnx
@@ -45,6 +48,7 @@ app:
         args:
           - --quiet
           - homekit-py
+        init_timeout: 30
       - name: sonos
         command: uvx
         args:

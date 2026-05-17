@@ -41,7 +41,7 @@ async def _repl() -> None:
 async def _voice_loop() -> None:
     from appkit_commons.registry import service_registry
 
-    from pantau.audio.stt import GermanSTT
+    from pantau.audio.stt import create_stt
     from pantau.audio.tts import PiperTTS
     from pantau.audio.wakeword import WakeWordListener
     from pantau.config import ApplicationConfig
@@ -50,7 +50,7 @@ async def _voice_loop() -> None:
     cfg = service_registry().get(ApplicationConfig)
     logger.debug("Starting voice loop with configuration: %s", cfg)
     wakeword = WakeWordListener(cfg.wake_word)
-    stt = GermanSTT(cfg.stt)
+    stt = create_stt(cfg.stt)
     tts = PiperTTS(cfg.tts)
 
     async with PantauSession(cfg) as session:
@@ -64,22 +64,22 @@ async def _voice_loop() -> None:
                 await tts.speak("Ja?")
 
                 while True:
-                    text = await stt.record_and_transcribe(
+                    result = await stt.record_and_transcribe(
                         initial_silence_timeout_s=cfg.wake_word.post_wake_timeout_s,
                     )
-                    logger.debug("Transcription complete: %s", text)
-                    if not text:
+                    logger.debug("Transcription complete: %s", result.text)
+                    if not result.text:
                         logger.debug(
                             "No speech detected, returning to wake word listening"
                         )
                         break
 
-                    if _is_stop_phrase(text):
+                    if result.intent == "stop_session" or _is_stop_phrase(result.text):
                         logger.info("Stop phrase detected, shutting down")
                         await tts.speak("Auf Wiedersehen.")
                         return
 
-                    response = await session.process(text)
+                    response = await session.process(result.text)
                     logger.debug("Response: %s", response)
                     await tts.speak(response)
 

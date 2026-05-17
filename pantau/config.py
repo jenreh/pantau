@@ -15,9 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 class SttConfig(BaseConfig):
+    provider: str = "faster_whisper"  # faster_whisper | mlx_whisper | vosk | picovoice
     model_size: str = "small"
-    device: str = "auto"
+    model_path: str = ""  # vosk: path to model directory
+    device: str = "auto"  # faster_whisper / mlx_whisper only
     language: str = "de"
+    silence_stop_s: float = 0.4  # post-speech silence before cutoff (was hardcoded 1.2)
+    api_key: str = ""  # picovoice access key
+    intent_enabled: bool = False
 
 
 class TtsConfig(BaseConfig):
@@ -43,6 +48,7 @@ class McpServerConfig(BaseConfig):
     command: str | None = None
     args: list[str] = []
     cwd: str | None = None
+    init_timeout: float = 5.0
 
 
 class McpConfig(BaseConfig):
