@@ -154,6 +154,7 @@ Full rules in **writing-python-code** skill. Key:
 | Skill | Purpose |
 | --- | --- |
 | `writing-python-code` | Python 3.14 style, logging, type annotations, design patterns, testing |
+| `appkit-commons` | appkit-commons usage patterns: service registry, repository pattern, database models. |
 | `reflex-state-and-architecture` | State design, event handlers, background tasks, form validation, page factory, service registry, repo pattern, DB models, architecture |
 | `appkit-mantine-reference` | Full API for appkit_mantine components — inputs, layout, overlays, charts, data display, navigation |
 | `testing-reflex-state` | Pytest unit tests for Reflex State — event handlers, computed vars, substates |

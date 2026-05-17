@@ -1,9 +1,9 @@
 [project]
-name = "app"
-version = "1.0.0"
-description = "Project template for python apps. Change as needed."
+name = "pantau"
+version = "0.1.0"
+description = "Local voice agent for smart home control."
 readme = "README.md"
-requires-python = ">=3.14"
+requires-python = ">=3.14,<3.15"
 license = { text = "MIT" }
 authors = [{ name = "Jens Rehpöhler" }]
 keywords = []
@@ -16,12 +16,22 @@ classifiers = [
 ]
 
 dependencies = [
-    "fastmcp==3.3.1",
-    "typer==0.25.1",
-    "rich==15.0.0",
+    "appkit-commons>=1.10.2",
+    "faster-whisper>=1.2.1",
+    "fastmcp>=3.3.1",
+    "harmonyhub-py",
+    "homekit-py",
+    "huehub-py",
+    "onnxruntime>=1.26.0",
+    "openwakeword==0.6.0",
+    "piper-tts>=1.4.2",
     "pydantic==2.13.4",
+    "pydantic-ai>=1.97.0",
     "pydantic-settings==2.14.1",
-    "aiosqlite==0.22.1",
+    "silero-vad>=6.2.1",
+    "sonos-py",
+    "sounddevice>=0.5.5",
+    "soundfile>=0.13.1",
 ]
 
 [dependency-groups]
@@ -38,20 +48,32 @@ dev = [
     "types-PyYAML==6.0.12.20260510",
 ]
 
+
+[tool.uv]
+environments = ["sys_platform == 'darwin'"]
+
+[tool.uv.sources]
+huehub-py = { path = "../huehub-py", editable = true }
+sonos-py = { path = "../sonos-py", editable = true }
+homekit-py = { path = "../homekit-py", editable = true }
+harmonyhub-py = { path = "../harmonyhub-py", editable = true }
+
 [project.scripts]
-# app = "app.cli.main:app"
-# app-mcp = "app.mcp_server.server:main"
+pantau = "pantau.main:main"
 
 [project.urls]
 Homepage = "https://github.com/jenreh/python-kit"
 Repository = "https://github.com/jenreh/python-kit"
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 [tool.hatch.build.targets.wheel]
-packages = ["app"]
+packages = ["pantau"]
 
 [tool.hatch.build.targets.sdist]
 include = [
-    "/app",
+    "/pantau",
     "README.md",
     "pyproject.toml",
 ]
@@ -75,7 +97,7 @@ exclude = [
 
 [tool.bumpversion]
 commit = false
-current_version = "1.0.0"
+current_version = "1.1.0"
 tag = false
 allow-dirty = false
 
@@ -108,35 +130,35 @@ extend-exclude = [
 [tool.ruff.lint]
 extend-select = ["I"]
 ignore = [
+    "ARG001",
+    "ASYNC109",
+    "ASYNC240",
+    "B008",
+    "B017",
+    "E501",
     "EM101",
     "EM102",
     "ISC001",
     "N811",
     "N818",
-    "PLR0913",
-    "PT011",
-    "PT012",
-    "RUF012",
-    "RUF100",
-    "SIM300",
-    "E501",
-    "B008",
-    "ASYNC240",
-    "PYI034",
-    "S101",
+    "PLC0415",
+    "PLR0911",
     "PLR0912",
-    "ASYNC109",
-    "ARG001",
+    "PLR0913",
     "PLR2004",
     "PLW0603",
-    "PLC0415",
-    "SIM105",
     "PLW2901",
-    "PLR0911",
-    "B017",
+    "PT011",
+    "PT012",
+    "PYI034",
     "RUF001",
     "RUF002",
     "RUF003",
+    "RUF012",
+    "RUF100",
+    "S101",
+    "SIM105",
+    "SIM300",
 ]
 select = [
     "A",
@@ -178,20 +200,20 @@ select = [
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401", "I001"]
 "test_**.py" = [
-    "S101",
-    "PLR2004",
     "ANN001",
-    "S106",
-    "SLF001",
-    "RET504",
-    "PERF401",
-    "E402",
-    "S501",
-    "S110",
     "ARG002",
     "ARG005",
+    "E402",
     "E741",
+    "PERF401",
+    "PLR2004",
+    "RET504",
     "RUF059",
+    "S101",
+    "S106",
+    "S110",
+    "S501",
+    "SLF001",
 ]
 
 [tool.ruff.format]
@@ -204,7 +226,7 @@ docstring-code-line-length = "dynamic"
 exclude = ["*.pyi"]
 
 [tool.ruff.lint.isort]
-known-local-folder = ["sonos"]
+known-local-folder = ["pantau"]
 
 [tool.pytest.ini_options]
 cache_dir = ".cache/pytest"
@@ -212,28 +234,46 @@ testpaths = ["tests"]
 asyncio_mode = "auto"
 markers = [
     "sonos_live: requires real Sonos hardware on the network",
+    "integration: requires external services (OPENAI_API_KEY, real hardware)",
 ]
 
 [tool.mypy]
 cache_dir = ".cache/mypy"
 disallow_untyped_defs = true
 incremental = true
-python_version = "3.14"
+python_version = "3.12"
 warn_return_any = true
 warn_unused_configs = true
-ignore_missing_imports = true
+ignore_errors = true
+ignore_missing_imports = false
 exclude = [
     ".cache",
-    ".claude",
     ".venv",
+    ".venv.mac",
+    ".venv_mac",
+    ".web",
+    ".github",
+    ".devcontainer",
+    ".idea",
+    ".vscode",
     "build",
     "dist",
+    "docs",
+    "infra",
+    "prompts",
+    "scripts",
+    "static",
+    "uploads",
 ]
 
 [tool.coverage.run]
 branch = true
-source = ["app"]
-omit = []
+source = ["pantau"]
+omit = [
+    "pantau/agent/prompts.py",
+    "*/tests/*",
+    "*/__pycache__/*",
+]
 
 [tool.coverage.report]
 exclude_lines = ["if TYPE_CHECKING:", "if __name__ == .__main__.:", "pragma: no cover"]

@@ -1,0 +1,192 @@
+intents:
+  - id: switch_on
+    templates:
+      - "schalte {entity} ein"
+      - "schalt {entity} ein"
+      - "schalte den {entity} ein"
+      - "schalte die {entity} ein"
+      - "schalte das {entity} ein"
+      - "schalt den {entity} ein"
+      - "schalt die {entity} ein"
+      - "schalt das {entity} ein"
+      - "schalte das licht im {entity} ein"
+      - "schalt das licht im {entity} ein"
+      - "{entity} einschalten"
+      - "mach {entity} an"
+      - "mach den {entity} an"
+      - "mach die {entity} an"
+      - "licht im {entity} an"
+      - "{entity} licht an"
+      - "starte {entity}"
+      - "{entity} ein"
+      - "{entity} an"
+    entity_types:
+      - device
+      - activity
+      - light
+      - room
+
+  - id: switch_off
+    templates:
+      - "schalte {entity} aus"
+      - "schalt {entity} aus"
+      - "schalte den {entity} aus"
+      - "schalte die {entity} aus"
+      - "schalte das {entity} aus"
+      - "schalt den {entity} aus"
+      - "schalt die {entity} aus"
+      - "schalt das {entity} aus"
+      - "schalte das licht im {entity} aus"
+      - "schalt das licht im {entity} aus"
+      - "{entity} ausschalten"
+      - "mach {entity} aus"
+      - "mach den {entity} aus"
+      - "mach die {entity} aus"
+      - "licht im {entity} aus"
+      - "{entity} licht aus"
+      - "stoppe {entity}"
+      - "{entity} aus"
+    entity_types:
+      - device
+      - activity
+      - light
+      - room
+
+  - id: set_channel
+    templates:
+      - "schalte auf {entity}"
+      - "wechsel zu {entity}"
+      - "mach {entity} an"
+      - "{entity} einschalten"
+    entity_types:
+      - tv_channel
+
+  - id: set_volume
+    templates:
+      - "stelle {entity} auf {value}"
+      - "setze {entity} auf {value}"
+      - "{entity} auf {value}"
+    entity_types:
+      - speaker
+      - device
+    slots:
+      value:
+        type: integer
+        min: 0
+        max: 100
+
+entities:
+  - id: fernseher
+    type: device
+    display_name: "Fernseher"
+    aliases:
+      - "fernseher"
+      - "tv"
+      - "glotze"
+
+  - id: wohnzimmer
+    type: room
+    display_name: "Wohnzimmer"
+    aliases:
+      - "wohnzimmer"
+      - "stube"
+
+  - id: flur
+    type: room
+    display_name: "Flur"
+    aliases:
+      - "flur"
+      - "gang"
+
+  - id: lautsprecher
+    type: speaker
+    display_name: "Lautsprecher"
+    aliases:
+      - "lautsprecher"
+      - "musik"
+
+  - id: zdf
+    type: tv_channel
+    display_name: "ZDF"
+    aliases:
+      - "zdf"
+      - "zweite"
+      - "zweites"
+      - "zweites programm"
+    default_command:
+      tool: "harmony_set_channel"
+      args:
+        channel: "2"
+
+  - id: ard
+    type: tv_channel
+    display_name: "ARD"
+    aliases:
+      - "ard"
+      - "erste"
+      - "erstes"
+      - "das erste"
+    default_command:
+      tool: "harmony_set_channel"
+      args:
+        channel: "1"
+
+commands:
+  - intent: switch_on
+    entity: fernseher
+    tool: harmony_start_activity
+    args:
+      activity: "Fernsehen"
+    response: "Ich schalte den Fernseher ein."
+
+  - intent: switch_off
+    entity: fernseher
+    tool: harmony_power_off
+    args: {}
+    response: "Ich schalte den Fernseher aus."
+
+  - intent: set_channel
+    entity: zdf
+    tool: harmony_set_channel
+    args:
+      channel: "2"
+    response: "Ich schalte auf ZDF."
+
+  - intent: switch_on
+    entity: wohnzimmer
+    tool: hue_set_room_on
+    args:
+      room: "Wohnzimmer"
+      "on": true
+    response: "Ich schalte das Wohnzimmerlicht ein."
+
+  - intent: switch_off
+    entity: wohnzimmer
+    tool: hue_set_room_on
+    args:
+      room: "Wohnzimmer"
+      "on": false
+    response: "Ich schalte das Wohnzimmerlicht aus."
+
+  - intent: switch_on
+    entity: flur
+    tool: hue_set_room_on
+    args:
+      room: "Flur"
+      "on": true
+    response: "Ich schalte das Flurlicht ein."
+
+  - intent: switch_off
+    entity: flur
+    tool: hue_set_room_on
+    args:
+      room: "Flur"
+      "on": false
+    response: "Ich schalte das Flurlicht aus."
+
+  - intent: set_volume
+    entity: lautsprecher
+    tool: sonos_set_volume
+    args:
+      zone: "Wohnzimmer"
+    response: "Ich stelle die Lautstärke ein."

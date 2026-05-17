@@ -23,6 +23,16 @@
       "Skill(create-readme:*)",
       "Skill(writing-python-code:*)",
       "Skill(frontend-design:*)",
+      "Bash(find /Users/jens/.cache/uv -path \"*harmonyhub*\" -name \"pyproject.toml\" 2>/dev/null | head -5)",
+      "Read(//Users/jens/.cache/uv/**)",
+      "Bash(find ~/.local/share/uv -path \"*harmonyhub*\" -name \"pyproject.toml\" 2>/dev/null | head -3 ; find /tmp -path \"*harmonyhub*\" -name \"pyproject.toml\" 2>/dev/null | head -3)",
+      "Read(//Users/jens/.local/share/uv/**)",
+      "Read(//private/tmp/**)",
+      "Bash(uv run python -c \" *)",
+      "Read(//Users/jens/Workspace/projekte/homekit-py/homekit/**)",
+      "Bash(grep -n \"aiohttp\" /Users/jens/Workspace/projekte/sonos-py/pyproject.toml)",
+      "Read(//Users/jens/Workspace/projekte/sonos-py/**)",
+      "WebFetch(domain:gofastmcp.com)"
     ],
     "defaultMode": "acceptEdits"
   }
