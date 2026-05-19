@@ -32,7 +32,11 @@
       "Read(//Users/jens/Workspace/projekte/homekit-py/homekit/**)",
       "Bash(grep -n \"aiohttp\" /Users/jens/Workspace/projekte/sonos-py/pyproject.toml)",
       "Read(//Users/jens/Workspace/projekte/sonos-py/**)",
-      "WebFetch(domain:gofastmcp.com)"
+      "WebFetch(domain:gofastmcp.com)",
+      "Bash(curl -s https://raw.githubusercontent.com/ufal/SimulStreaming/main/setup.cfg)",
+      "Bash(curl -s \"https://api.github.com/repos/ufal/SimulStreaming/contents/\")",
+      "Bash(git submodule *)",
+      "Bash(pkill -f \"pytest.*test_simul\")"
     ],
     "defaultMode": "acceptEdits"
   }

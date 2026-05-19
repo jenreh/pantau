@@ -1,0 +1,3 @@
+[submodule "vendor/SimulStreaming"]
+	path = vendor/SimulStreaming
+	url = https://github.com/ufal/SimulStreaming

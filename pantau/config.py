@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 
 
 class SttConfig(BaseConfig):
-    provider: str = "faster_whisper"  # faster_whisper | mlx_whisper | vosk | picovoice
+    provider: str = "faster_whisper"  # faster_whisper | mlx_whisper | vosk | picovoice | simul_streaming
     model_size: str = "small"
     model_path: str = ""  # vosk: path to model directory
     device: str = "auto"  # faster_whisper / mlx_whisper only
@@ -24,6 +24,16 @@ class SttConfig(BaseConfig):
     api_key: str = ""  # picovoice access key
     intent_enabled: bool = False
     initial_prompt: str = "Schalte das Licht ein. Schalte den Fernseher aus. Mach lauter. Wohnzimmer, Schlafzimmer, Küche."
+    # simul_streaming backend
+    simul_model_path: str = (
+        ""  # path to whisper .pt file (required for simul_streaming)
+    )
+    simul_cif_ckpt_path: str = (
+        ""  # optional CIF checkpoint for AlignAtt word boundary detection
+    )
+    simul_frame_threshold: int = 25  # AlignAtt attention threshold (frames × 0.02 s)
+    simul_audio_max_len: float = 30.0  # max audio buffer in seconds
+    simul_beams: int = 1  # beam width (1 = greedy)
 
 
 class TtsConfig(BaseConfig):

@@ -12,9 +12,10 @@ app:
     post_wake_timeout_s: 6.0
 
   stt:
-    provider: faster_whisper
-    # provider: mlx_whisper
-    model_size: small
+    #provider: faster_whisper
+    provider: mlx_whisper
+    model_size: large-v3
+    #model_size: small
     device: auto
     language: de
     silence_stop_s: 0.4
