@@ -37,7 +37,8 @@ def _build_stdio_mcp_toolset(server: McpServerConfig) -> MCPToolset:
             command=params.command,
             args=params.args,
             cwd=server.cwd,
-        )
+        ),
+        init_timeout=server.init_timeout,
     )
 
 
@@ -80,7 +81,7 @@ async def execute_mcp_tool(
             if result is None:
                 continue
 
-            logger.info(
+            logger.debug(
                 "audit: tool=%s server=%s args=%s result=%s",
                 tool_name,
                 server.name,
@@ -130,7 +131,7 @@ def build_agent(
         model = OllamaModel(
             cfg.llm.model,
             provider=OllamaProvider(
-                api_key=cfg.llm.api_key or None,
+                api_key=cfg.llm.api_key.get_secret_value() or None,
                 base_url=cfg.llm.base_url,
             ),
         )
@@ -138,7 +139,7 @@ def build_agent(
         model = OpenAIResponsesModel(
             cfg.llm.model,
             provider=OpenAIProvider(
-                api_key=cfg.llm.api_key or None,
+                api_key=cfg.llm.api_key.get_secret_value() or None,
                 base_url=cfg.llm.base_url,
             ),
         )

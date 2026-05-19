@@ -35,5 +35,5 @@ class PiperTTS:
         sd.wait()
 
     async def speak(self, text: str) -> None:
-        logger.info("TTS speak: %s", text)
+        logger.debug("TTS speak: %s", text)
         await asyncio.to_thread(self._synthesize_and_play, text)

@@ -50,3 +50,7 @@ loggers:
     level: WARNING
     handlers: [console]
     propagate: 0
+  simulstreaming.whisper.simul_whisper.simul_whisperer:
+    level: WARNING
+    handlers: [console]
+    propagate: 0

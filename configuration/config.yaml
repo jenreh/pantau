@@ -9,12 +9,16 @@ app:
   wake_word:
     model: models/pantau_x.tflite
     threshold: 0.5
-    post_wake_timeout_s: 6.0
+    post_wake_timeout_s: 3.0
 
   stt:
-    model_size: medium
+    provider: simul_streaming
+    model_size: large
     device: auto
     language: de
+    silence_stop_s: 0.4
+    intent_enabled: false
+    simul_model_path: models/small.pt
 
   tts:
     model: models/de_DE-thorsten-high.onnx
@@ -45,6 +49,7 @@ app:
         args:
           - --quiet
           - homekit-py
+        init_timeout: 30
       - name: sonos
         command: uvx
         args:

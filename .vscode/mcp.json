@@ -1,72 +1,57 @@
 {
-    "inputs": [
-        {
-            "type": "promptString",
-            "id": "openai-key",
-            "description": "Enter your OpenAI API Key",
-            "password": true
-        }
-    ],
-    "servers": {
-        "memory": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@modelcontextprotocol/server-memory"
-            ]
-        },
-        "code-reasoning": {
-            "command": "npx",
-            "args": [
-                "-y",
-                "@mettamatt/code-reasoning"
-            ]
-        },
-        "duckduckgo": {
-            "command": "uvx",
-            "args": [
-                "duckduckgo-mcp-server"
-            ]
-        },
-        "pantau-mcp": {
-            "command": "uv",
-            "args": [
-                "run",
-                "pantau-mcp"
-            ]
-        },
-        "harmonyhub": {
-            "command": "uv",
-            "args": [
-                "run",
-                "harmony-mcp"
-            ],
-            "cwd": "/Users/jens/Workspace/projekte/harmonyhub-py"
-        },
-        "huehub": {
-            "command": "uv",
-            "args": [
-                "run",
-                "hue-mcp"
-            ],
-            "cwd": "/Users/jens/Workspace/projekte/huehub-py"
-        },
-        "homekit": {
-            "command": "uv",
-            "args": [
-                "run",
-                "homekit-mcp"
-            ],
-            "cwd": "/Users/jens/Workspace/projekte/homekit-py"
-        },
-        "sonos": {
-            "command": "uv",
-            "args": [
-                "run",
-                "sonos",
-                "mcp"
-            ],
-            "cwd": "/Users/jens/Workspace/projekte/sonos-py"
-        }
-    }
+	"inputs": [
+		{
+			"type": "promptString",
+			"id": "openai-key",
+			"description": "Enter your OpenAI API Key",
+			"password": true
+		}
+	],
+	"servers": {
+		"memory": {
+			"command": "npx",
+			"args": [
+				"-y",
+				"@modelcontextprotocol/server-memory"
+			],
+			"type": "stdio"
+		},
+		"harmonyhub": {
+			"command": "uv",
+			"args": [
+				"run",
+				"harmony-mcp"
+			],
+			"cwd": "/Users/jens/Workspace/projekte/harmonyhub-py",
+			"type": "stdio"
+		},
+		"huehub": {
+			"command": "uv",
+			"args": [
+				"run",
+				"hue-mcp"
+			],
+			"cwd": "/Users/jens/Workspace/projekte/huehub-py",
+			"type": "stdio"
+		},
+		"homekit": {
+			"command": "uv",
+			"args": [
+				"run",
+				"homekit-mcp"
+			],
+			"cwd": "/Users/jens/Workspace/projekte/homekit-py",
+			"type": "stdio"
+		},
+		"sonos": {
+			"command": "uv",
+			"args": [
+				"run",
+				"sonos",
+				"mcp"
+			],
+			"cwd": "/Users/jens/Workspace/projekte/sonos-py",
+			"type": "stdio"
+		}
+	}
 }

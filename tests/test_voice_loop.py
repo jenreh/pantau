@@ -4,6 +4,8 @@ from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
+from pantau.audio.protocol import RecognitionResult
+
 
 def _make_session_mock(process_side_effects: list) -> AsyncMock:
     mock_session = AsyncMock()
@@ -23,7 +25,9 @@ async def test_voice_loop_routes_command_to_session() -> None:
     mock_ww.listen = AsyncMock()
 
     mock_stt = MagicMock()
-    mock_stt.record_and_transcribe = AsyncMock(return_value="schalte den fernseher ein")
+    mock_stt.record_and_transcribe = AsyncMock(
+        return_value=RecognitionResult(text="schalte den fernseher ein")
+    )
 
     mock_tts = MagicMock()
     mock_tts.speak = AsyncMock()
@@ -33,7 +37,7 @@ async def test_voice_loop_routes_command_to_session() -> None:
     with (
         patch("appkit_commons.registry.service_registry") as mock_registry,
         patch("pantau.audio.wakeword.WakeWordListener", return_value=mock_ww),
-        patch("pantau.audio.stt.GermanSTT", return_value=mock_stt),
+        patch("pantau.audio.stt.create_stt", return_value=mock_stt),
         patch("pantau.audio.tts.PiperTTS", return_value=mock_tts),
         patch("pantau.session.PantauSession", return_value=mock_session),
     ):
@@ -58,7 +62,9 @@ async def test_voice_loop_speaks_error_on_process_exception() -> None:
     mock_ww.listen = AsyncMock()
 
     mock_stt = MagicMock()
-    mock_stt.record_and_transcribe = AsyncMock(return_value="licht an")
+    mock_stt.record_and_transcribe = AsyncMock(
+        return_value=RecognitionResult(text="licht an")
+    )
 
     mock_tts = MagicMock()
     mock_tts.speak = AsyncMock()
@@ -68,7 +74,7 @@ async def test_voice_loop_speaks_error_on_process_exception() -> None:
     with (
         patch("appkit_commons.registry.service_registry") as mock_registry,
         patch("pantau.audio.wakeword.WakeWordListener", return_value=mock_ww),
-        patch("pantau.audio.stt.GermanSTT", return_value=mock_stt),
+        patch("pantau.audio.stt.create_stt", return_value=mock_stt),
         patch("pantau.audio.tts.PiperTTS", return_value=mock_tts),
         patch("pantau.session.PantauSession", return_value=mock_session),
     ):
@@ -90,7 +96,7 @@ async def test_voice_loop_skips_empty_transcription() -> None:
     mock_ww.listen = AsyncMock(side_effect=[None, KeyboardInterrupt()])
 
     mock_stt = MagicMock()
-    mock_stt.record_and_transcribe = AsyncMock(return_value="")
+    mock_stt.record_and_transcribe = AsyncMock(return_value=RecognitionResult(text=""))
 
     mock_tts = MagicMock()
     mock_tts.speak = AsyncMock()
@@ -100,7 +106,7 @@ async def test_voice_loop_skips_empty_transcription() -> None:
     with (
         patch("appkit_commons.registry.service_registry") as mock_registry,
         patch("pantau.audio.wakeword.WakeWordListener", return_value=mock_ww),
-        patch("pantau.audio.stt.GermanSTT", return_value=mock_stt),
+        patch("pantau.audio.stt.create_stt", return_value=mock_stt),
         patch("pantau.audio.tts.PiperTTS", return_value=mock_tts),
         patch("pantau.session.PantauSession", return_value=mock_session),
     ):
@@ -122,7 +128,9 @@ async def test_voice_loop_stops_on_beende_dich() -> None:
     mock_ww.stop = MagicMock()
 
     mock_stt = MagicMock()
-    mock_stt.record_and_transcribe = AsyncMock(return_value="beende dich")
+    mock_stt.record_and_transcribe = AsyncMock(
+        return_value=RecognitionResult(text="beende dich")
+    )
 
     mock_tts = MagicMock()
     mock_tts.speak = AsyncMock()
@@ -132,7 +140,7 @@ async def test_voice_loop_stops_on_beende_dich() -> None:
     with (
         patch("appkit_commons.registry.service_registry") as mock_registry,
         patch("pantau.audio.wakeword.WakeWordListener", return_value=mock_ww),
-        patch("pantau.audio.stt.GermanSTT", return_value=mock_stt),
+        patch("pantau.audio.stt.create_stt", return_value=mock_stt),
         patch("pantau.audio.tts.PiperTTS", return_value=mock_tts),
         patch("pantau.session.PantauSession", return_value=mock_session),
     ):

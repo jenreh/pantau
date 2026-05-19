@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
+from functools import lru_cache
 from pathlib import Path
 
 import yaml
@@ -228,14 +229,9 @@ def _match(text: str, rules: _Rules) -> FastPathResult | None:
     )
 
 
-_cached_rules: _Rules | None = None
-
-
+@lru_cache(maxsize=1)
 def _get_rules() -> _Rules:
-    global _cached_rules
-    if _cached_rules is None:
-        _cached_rules = load_rules()
-    return _cached_rules
+    return load_rules()
 
 
 def fast_path(text: str) -> FastPathResult | None:

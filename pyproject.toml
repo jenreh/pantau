@@ -22,9 +22,11 @@ dependencies = [
     "harmonyhub-py",
     "homekit-py",
     "huehub-py",
+    "mlx-whisper>=0.4.3",
     "onnxruntime>=1.26.0",
     "openwakeword==0.6.0",
     "piper-tts>=1.4.2",
+    "pvcheetah>=4.0.3",
     "pydantic==2.13.4",
     "pydantic-ai>=1.97.0",
     "pydantic-settings==2.14.1",
@@ -32,6 +34,7 @@ dependencies = [
     "sonos-py",
     "sounddevice>=0.5.5",
     "soundfile>=0.13.1",
+    "vosk>=0.3.44",
 ]
 
 [dependency-groups]
@@ -125,6 +128,7 @@ extend-exclude = [
     "build",
     "dist",
     "docs",
+    "vendor",
 ]
 
 [tool.ruff.lint]
@@ -232,6 +236,7 @@ known-local-folder = ["pantau"]
 cache_dir = ".cache/pytest"
 testpaths = ["tests"]
 asyncio_mode = "auto"
+pythonpath = ["vendor/SimulStreaming"]
 markers = [
     "sonos_live: requires real Sonos hardware on the network",
     "integration: requires external services (OPENAI_API_KEY, real hardware)",

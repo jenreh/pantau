@@ -9,15 +9,31 @@ from appkit_commons.configuration.configuration import (
     Environment,
 )
 from appkit_commons.registry import service_registry
-from pydantic import Field
+from pydantic import Field, SecretStr
 
 logger = logging.getLogger(__name__)
 
 
 class SttConfig(BaseConfig):
+    provider: str = "faster_whisper"  # faster_whisper | mlx_whisper | vosk | picovoice | simul_streaming
     model_size: str = "small"
-    device: str = "auto"
+    model_path: str = ""  # vosk: path to model directory
+    device: str = "auto"  # faster_whisper / mlx_whisper only
     language: str = "de"
+    silence_stop_s: float = 0.4  # post-speech silence before cutoff (was hardcoded 1.2)
+    api_key: SecretStr = SecretStr("")
+    intent_enabled: bool = False
+    initial_prompt: str = "Schalte das Licht ein. Schalte den Fernseher aus. Mach lauter. Wohnzimmer, Schlafzimmer, Küche."
+    # simul_streaming backend
+    simul_model_path: str = (
+        ""  # path to whisper .pt file (required for simul_streaming)
+    )
+    simul_cif_ckpt_path: str = (
+        ""  # optional CIF checkpoint for AlignAtt word boundary detection
+    )
+    simul_frame_threshold: int = 25  # AlignAtt attention threshold (frames × 0.02 s)
+    simul_audio_max_len: float = 30.0  # max audio buffer in seconds
+    simul_beams: int = 1  # beam width (1 = greedy)
 
 
 class TtsConfig(BaseConfig):
@@ -28,13 +44,13 @@ class TtsConfig(BaseConfig):
 class WakeWordConfig(BaseConfig):
     model: str = "models/pantau.tflite"
     threshold: float = 0.5
-    post_wake_timeout_s: float = 6.0
+    post_wake_timeout_s: float = 3.0
 
 
 class LlmConfig(BaseConfig):
     provider: str = "openai"
     model: str = "gpt-5.4-nano"
-    api_key: str = ""
+    api_key: SecretStr = SecretStr("")
     base_url: str | None = None
 
 
@@ -43,6 +59,7 @@ class McpServerConfig(BaseConfig):
     command: str | None = None
     args: list[str] = []
     cwd: str | None = None
+    init_timeout: float = 5.0
 
 
 class McpConfig(BaseConfig):
@@ -67,6 +84,9 @@ class ApplicationConfig(BaseConfig):
     mcp: McpConfig = Field(default_factory=McpConfig)
 
 
+PantauConfig = ApplicationConfig
+
+
 @lru_cache(maxsize=1)
 def configure() -> Configuration[ApplicationConfig]:
     logger.debug("--- Configuring application settings ---")
@@ -74,3 +94,8 @@ def configure() -> Configuration[ApplicationConfig]:
         ApplicationConfig,
         env_file=".env",
     )
+
+
+def load_config() -> PantauConfig:
+    configure()
+    return service_registry().get(ApplicationConfig)
