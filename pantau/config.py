@@ -84,6 +84,9 @@ class ApplicationConfig(BaseConfig):
     mcp: McpConfig = Field(default_factory=McpConfig)
 
 
+PantauConfig = ApplicationConfig
+
+
 @lru_cache(maxsize=1)
 def configure() -> Configuration[ApplicationConfig]:
     logger.debug("--- Configuring application settings ---")
@@ -91,3 +94,8 @@ def configure() -> Configuration[ApplicationConfig]:
         ApplicationConfig,
         env_file=".env",
     )
+
+
+def load_config() -> PantauConfig:
+    configure()
+    return service_registry().get(ApplicationConfig)

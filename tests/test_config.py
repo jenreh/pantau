@@ -5,9 +5,11 @@ from pantau.config import (
     LlmConfig,
     McpConfig,
     McpServerConfig,
+    PantauConfig,
     SttConfig,
     TtsConfig,
     WakeWordConfig,
+    load_config,
 )
 
 
@@ -88,3 +90,13 @@ def test_tts_config_defaults() -> None:
     cfg = TtsConfig()
     assert cfg.model == "models/de_DE-thorsten-high.onnx"
     assert cfg.speak_rate == 1.0
+
+
+def test_pantau_config_is_alias_for_application_config() -> None:
+    assert PantauConfig is ApplicationConfig
+
+
+def test_load_config_returns_application_config() -> None:
+    cfg = load_config()
+    assert isinstance(cfg, ApplicationConfig)
+    assert cfg.llm.model

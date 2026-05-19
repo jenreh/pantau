@@ -12,14 +12,13 @@ app:
     post_wake_timeout_s: 6.0
 
   stt:
-    #provider: faster_whisper
-    provider: mlx_whisper
-    model_size: large-v3
-    #model_size: small
+    provider: simul_streaming
+    model_size: large
     device: auto
     language: de
     silence_stop_s: 0.4
     intent_enabled: false
+    simul_model_path: models/small.pt
 
   tts:
     model: models/de_DE-thorsten-high.onnx

@@ -81,7 +81,7 @@ async def execute_mcp_tool(
             if result is None:
                 continue
 
-            logger.info(
+            logger.debug(
                 "audit: tool=%s server=%s args=%s result=%s",
                 tool_name,
                 server.name,

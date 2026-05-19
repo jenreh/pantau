@@ -39,5 +39,8 @@
       "Bash(pkill -f \"pytest.*test_simul\")"
     ],
     "defaultMode": "acceptEdits"
+  },
+  "worktree": {
+    "bgIsolation": "none"
   }
 }

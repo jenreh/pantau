@@ -25,7 +25,7 @@ async def _process_fast_path(cfg: ApplicationConfig, text: str) -> str | None:
     if match is None:
         return None
 
-    logger.info(
+    logger.debug(
         "fast-path: intent=%s entity=%s tool=%s",
         match.intent_id,
         match.entity_id,
@@ -69,7 +69,7 @@ class PantauSession:
         )
         self._agent = build_agent(self.cfg, mcp_servers=self._available_mcp_servers)
         await self._exit_stack.enter_async_context(self._agent)
-        logger.info(
+        logger.debug(
             "pantau-session: initialized agent with %d available MCP server(s)",
             len(self._available_mcp_servers),
         )
@@ -85,19 +85,19 @@ class PantauSession:
         t0 = time.monotonic()
         fast_path_response = await _process_fast_path(self.cfg, text)
         if fast_path_response is not None:
-            logger.info(
+            logger.debug(
                 "latency: fast-path=%.3fs",
                 time.monotonic() - t0,
             )
             _append_fast_path_history(self._message_history, text, fast_path_response)
             return fast_path_response
 
-        logger.info(
+        logger.debug(
             "llm-path: routing to session agent with %d available MCP server(s)",
             len(self._available_mcp_servers),
         )
         result = await self._agent.run(text, message_history=self._message_history)
-        logger.info(
+        logger.debug(
             "latency: llm-path=%.3fs",
             time.monotonic() - t0,
         )

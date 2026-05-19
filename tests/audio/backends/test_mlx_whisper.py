@@ -38,7 +38,10 @@ def test_mlx_adapter_preloads_model_in_dedicated_thread(cfg: SttConfig) -> None:
     from pantau.audio.backends.mlx_whisper import MlxWhisperAdapter
 
     mock_model = MagicMock()
-    with patch.object(ModelHolder, "get_model", return_value=mock_model) as mock_get:
+    with (
+        patch.object(ModelHolder, "get_model", return_value=mock_model) as mock_get,
+        patch("mlx_whisper.transcribe", return_value={"text": ""}),
+    ):
         adapter = MlxWhisperAdapter(cfg)
 
     mock_get.assert_called_once_with("mlx-community/whisper-small-mlx", mx.float16)

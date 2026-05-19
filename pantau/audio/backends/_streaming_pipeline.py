@@ -125,14 +125,6 @@ class StreamingPipeline:
                 break
 
             self._online.insert_audio_chunk(chunk)
-            partial = self._online.process_iter()
-            if partial and partial.get("text", "").strip():
-                asyncio.run_coroutine_threadsafe(
-                    result_q.put(
-                        PartialResult(text=partial["text"].strip(), is_final=False)
-                    ),
-                    loop,
-                ).result()
 
         asyncio.run_coroutine_threadsafe(result_q.put(None), loop).result()
         logger.debug("StreamingPipeline: processing finished")

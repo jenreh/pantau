@@ -75,6 +75,52 @@ def test_record_and_transcribe_empty_result(adapter: object) -> None:
     assert result.text == ""
 
 
+def test_init_creates_adapter_with_mocked_simul(cfg: SttConfig) -> None:
+    from pantau.audio.backends.simul_streaming import SimulStreamingAdapter
+
+    mock_asr_cls = MagicMock()
+    mock_online_cls = MagicMock()
+    mock_asr = mock_asr_cls.return_value
+    mock_online = mock_online_cls.return_value
+
+    mock_module = MagicMock()
+    mock_module.SimulWhisperASR = mock_asr_cls
+    mock_module.SimulWhisperOnline = mock_online_cls
+
+    import sys
+
+    with patch.dict(sys.modules, {"simulstreaming_whisper": mock_module}):
+        adapter = SimulStreamingAdapter(cfg)
+
+    assert adapter._online is mock_online
+    assert adapter._cfg is cfg
+    mock_asr_cls.assert_called_once()
+    mock_online_cls.assert_called_once_with(mock_asr)
+
+
+async def test_stream_transcribe_yields_from_pipeline(adapter: object) -> None:
+    expected = [
+        PartialResult(text="partial", is_final=False),
+        PartialResult(text="final", is_final=True),
+    ]
+
+    async def fake_run(initial_silence_timeout_s: float) -> None:
+        for item in expected:
+            yield item
+
+    mock_pipeline_instance = MagicMock()
+    mock_pipeline_instance.run = fake_run
+    mock_pipeline_cls = MagicMock(return_value=mock_pipeline_instance)
+
+    with patch(
+        "pantau.audio.backends._streaming_pipeline.StreamingPipeline",
+        mock_pipeline_cls,
+    ):
+        results = await _collect(adapter.stream_transcribe())
+
+    assert results == expected
+
+
 def test_factory_creates_simul_streaming_adapter(cfg: SttConfig) -> None:
     from pantau.audio.backends.simul_streaming import SimulStreamingAdapter
     from pantau.audio.stt import create_stt
@@ -194,7 +240,92 @@ class TestStreamingPipeline:
         final = next(i for i in items if isinstance(i, PartialResult) and i.is_final)
         assert final.text == "Küche einschalten"
 
-    async def test_process_worker_emits_partial_results(
+    async def test_run_yields_results_and_stops_on_sentinel(
+        self, online: MagicMock, cfg: SttConfig
+    ) -> None:
+        import queue as _queue
+
+        from pantau.audio.backends._streaming_pipeline import StreamingPipeline
+
+        pipeline = StreamingPipeline(online, cfg)
+
+        def fake_process_worker(
+            audio_q: _queue.Queue,
+            result_q: asyncio.Queue,
+            loop: asyncio.AbstractEventLoop,
+        ) -> None:
+            asyncio.run_coroutine_threadsafe(
+                result_q.put(PartialResult(text="partial", is_final=False)), loop
+            ).result()
+            asyncio.run_coroutine_threadsafe(
+                result_q.put(PartialResult(text="final text", is_final=True)), loop
+            ).result()
+            asyncio.run_coroutine_threadsafe(result_q.put(None), loop).result()
+
+        with (
+            patch.object(pipeline, "_record_worker"),
+            patch.object(pipeline, "_process_worker", side_effect=fake_process_worker),
+        ):
+            results = []
+            async for item in pipeline.run(1.2):
+                results.append(item)
+
+        assert len(results) == 2
+        assert results[0].text == "partial"
+        assert results[0].is_final is False
+        assert results[1].text == "final text"
+        assert results[1].is_final is True
+
+    def test_record_worker_stops_after_post_speech_silence(
+        self, online: MagicMock, cfg: SttConfig
+    ) -> None:
+        import queue as _queue
+
+        import numpy as np
+
+        from pantau.audio.backends._streaming_pipeline import (
+            _CHUNK_FRAMES,
+            _SAMPLE_RATE,
+            StreamingPipeline,
+        )
+
+        pipeline = StreamingPipeline(online, cfg)
+        audio_q: _queue.Queue = _queue.Queue()
+
+        post_limit = int(cfg.silence_stop_s * _SAMPLE_RATE / _CHUNK_FRAMES)
+        speech_chunk = np.ones((512, 1), dtype=np.float32)
+        silence_chunk = np.zeros((512, 1), dtype=np.float32)
+        read_returns = [(speech_chunk, None)] + [(silence_chunk, None)] * (
+            post_limit + 1
+        )
+
+        mock_stream = MagicMock()
+        mock_stream.read.side_effect = read_returns
+
+        mock_vad = MagicMock()
+        mock_vad.is_speech.side_effect = [True] + [False] * (post_limit + 1)
+
+        mock_ctx = MagicMock()
+        mock_ctx.__enter__ = MagicMock(return_value=mock_stream)
+        mock_ctx.__exit__ = MagicMock(return_value=False)
+
+        with (
+            patch(
+                "pantau.audio.backends._streaming_pipeline.sd.InputStream",
+                return_value=mock_ctx,
+            ),
+            patch("pantau.audio.vad.SileroVAD", return_value=mock_vad),
+        ):
+            pipeline._record_worker(audio_q, 1.2)
+
+        items = []
+        while not audio_q.empty():
+            items.append(audio_q.get_nowait())
+
+        assert items[-1] is None
+        assert len(items) >= 2
+
+    async def test_process_worker_batches_chunks_no_partials(
         self, online: MagicMock, cfg: SttConfig
     ) -> None:
         import queue
@@ -203,11 +334,6 @@ class TestStreamingPipeline:
 
         from pantau.audio.backends._streaming_pipeline import StreamingPipeline
 
-        online.process_iter.side_effect = [
-            {"text": "Kü"},
-            {"text": "Küche"},
-            {},
-        ]
         online.finish.return_value = {"text": "Küche einschalten"}
 
         audio_q: queue.Queue = queue.Queue()
@@ -222,11 +348,16 @@ class TestStreamingPipeline:
         pipeline = StreamingPipeline(online, cfg)
         await self._run_worker(pipeline, audio_q, result_q)
 
+        online.process_iter.assert_not_called()
+        assert online.insert_audio_chunk.call_count == 3
+
         items = []
         while not result_q.empty():
             items.append(result_q.get_nowait())
 
         partials = [i for i in items if isinstance(i, PartialResult) and not i.is_final]
-        assert len(partials) == 2
-        assert partials[0].text == "Kü"
-        assert partials[1].text == "Küche"
+        assert len(partials) == 0
+
+        finals = [i for i in items if isinstance(i, PartialResult) and i.is_final]
+        assert len(finals) == 1
+        assert finals[0].text == "Küche einschalten"

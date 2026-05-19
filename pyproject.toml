@@ -236,6 +236,7 @@ known-local-folder = ["pantau"]
 cache_dir = ".cache/pytest"
 testpaths = ["tests"]
 asyncio_mode = "auto"
+pythonpath = ["vendor/SimulStreaming"]
 markers = [
     "sonos_live: requires real Sonos hardware on the network",
     "integration: requires external services (OPENAI_API_KEY, real hardware)",
