@@ -6,6 +6,7 @@ import queue
 import sys
 import threading
 from collections.abc import AsyncGenerator
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -21,6 +22,11 @@ logger = logging.getLogger(__name__)
 
 _SAMPLE_RATE = 16_000
 _CHUNK_FRAMES = 512
+
+
+@dataclass
+class _EndMarker:
+    speech_detected: bool
 
 
 def _ensure_simul_on_path() -> None:
@@ -51,7 +57,7 @@ class StreamingPipeline:
         self, initial_silence_timeout_s: float
     ) -> AsyncGenerator[PartialResult]:
         loop = asyncio.get_running_loop()
-        audio_q: queue.Queue[np.ndarray | None] = queue.Queue()
+        audio_q: queue.Queue[np.ndarray | _EndMarker] = queue.Queue()
         result_q: asyncio.Queue[PartialResult | None] = asyncio.Queue()
 
         rec = threading.Thread(
@@ -75,7 +81,7 @@ class StreamingPipeline:
 
     def _record_worker(
         self,
-        audio_q: queue.Queue[np.ndarray | None],
+        audio_q: queue.Queue[np.ndarray | _EndMarker],
         initial_silence_timeout_s: float,
     ) -> None:
         from pantau.audio.vad import SileroVAD
@@ -102,12 +108,12 @@ class StreamingPipeline:
                     if silence_frames >= limit:
                         break
 
-        audio_q.put(None)
+        audio_q.put(_EndMarker(speech_detected=speech_started))
         logger.debug("StreamingPipeline: recording finished")
 
     def _process_worker(
         self,
-        audio_q: queue.Queue[np.ndarray | None],
+        audio_q: queue.Queue[np.ndarray | _EndMarker],
         result_q: asyncio.Queue[PartialResult | None],
         loop: asyncio.AbstractEventLoop,
     ) -> None:
@@ -116,9 +122,15 @@ class StreamingPipeline:
 
         while True:
             chunk = audio_q.get()
-            if chunk is None:
-                result = self._online.finish()
-                text = result.get("text", "").strip() if result else ""
+            if isinstance(chunk, _EndMarker):
+                if chunk.speech_detected:
+                    result = self._online.finish()
+                    text = result.get("text", "").strip() if result else ""
+                else:
+                    logger.debug(
+                        "StreamingPipeline: no speech detected, skipping transcription"
+                    )
+                    text = ""
                 asyncio.run_coroutine_threadsafe(
                     result_q.put(PartialResult(text=text, is_final=True)), loop
                 ).result()

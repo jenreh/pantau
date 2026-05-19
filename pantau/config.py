@@ -9,7 +9,7 @@ from appkit_commons.configuration.configuration import (
     Environment,
 )
 from appkit_commons.registry import service_registry
-from pydantic import Field
+from pydantic import Field, SecretStr
 
 logger = logging.getLogger(__name__)
 
@@ -21,7 +21,7 @@ class SttConfig(BaseConfig):
     device: str = "auto"  # faster_whisper / mlx_whisper only
     language: str = "de"
     silence_stop_s: float = 0.4  # post-speech silence before cutoff (was hardcoded 1.2)
-    api_key: str = ""  # picovoice access key
+    api_key: SecretStr = SecretStr("")
     intent_enabled: bool = False
     initial_prompt: str = "Schalte das Licht ein. Schalte den Fernseher aus. Mach lauter. Wohnzimmer, Schlafzimmer, Küche."
     # simul_streaming backend
@@ -44,13 +44,13 @@ class TtsConfig(BaseConfig):
 class WakeWordConfig(BaseConfig):
     model: str = "models/pantau.tflite"
     threshold: float = 0.5
-    post_wake_timeout_s: float = 6.0
+    post_wake_timeout_s: float = 3.0
 
 
 class LlmConfig(BaseConfig):
     provider: str = "openai"
     model: str = "gpt-5.4-nano"
-    api_key: str = ""
+    api_key: SecretStr = SecretStr("")
     base_url: str | None = None
 
 

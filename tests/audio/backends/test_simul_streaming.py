@@ -188,12 +188,15 @@ class TestStreamingPipeline:
     ) -> None:
         import queue
 
-        from pantau.audio.backends._streaming_pipeline import StreamingPipeline
+        from pantau.audio.backends._streaming_pipeline import (
+            StreamingPipeline,
+            _EndMarker,
+        )
 
         audio_q: queue.Queue = queue.Queue()
         result_q: asyncio.Queue = asyncio.Queue()
 
-        audio_q.put(None)
+        audio_q.put(_EndMarker(speech_detected=True))
 
         pipeline = StreamingPipeline(online, cfg)
         await self._run_worker(pipeline, audio_q, result_q)
@@ -205,12 +208,15 @@ class TestStreamingPipeline:
     ) -> None:
         import queue
 
-        from pantau.audio.backends._streaming_pipeline import StreamingPipeline
+        from pantau.audio.backends._streaming_pipeline import (
+            StreamingPipeline,
+            _EndMarker,
+        )
 
         audio_q: queue.Queue = queue.Queue()
         result_q: asyncio.Queue = asyncio.Queue()
 
-        audio_q.put(None)
+        audio_q.put(_EndMarker(speech_detected=True))
 
         pipeline = StreamingPipeline(online, cfg)
         await self._run_worker(pipeline, audio_q, result_q)
@@ -222,13 +228,16 @@ class TestStreamingPipeline:
     ) -> None:
         import queue
 
-        from pantau.audio.backends._streaming_pipeline import StreamingPipeline
+        from pantau.audio.backends._streaming_pipeline import (
+            StreamingPipeline,
+            _EndMarker,
+        )
 
         online.finish.return_value = {"text": "  Küche einschalten  "}
         audio_q: queue.Queue = queue.Queue()
         result_q: asyncio.Queue = asyncio.Queue()
 
-        audio_q.put(None)
+        audio_q.put(_EndMarker(speech_detected=True))
 
         pipeline = StreamingPipeline(online, cfg)
         await self._run_worker(pipeline, audio_q, result_q)
@@ -287,6 +296,7 @@ class TestStreamingPipeline:
             _CHUNK_FRAMES,
             _SAMPLE_RATE,
             StreamingPipeline,
+            _EndMarker,
         )
 
         pipeline = StreamingPipeline(online, cfg)
@@ -322,7 +332,8 @@ class TestStreamingPipeline:
         while not audio_q.empty():
             items.append(audio_q.get_nowait())
 
-        assert items[-1] is None
+        assert isinstance(items[-1], _EndMarker)
+        assert items[-1].speech_detected is True
         assert len(items) >= 2
 
     async def test_process_worker_batches_chunks_no_partials(
@@ -332,7 +343,10 @@ class TestStreamingPipeline:
 
         import numpy as np
 
-        from pantau.audio.backends._streaming_pipeline import StreamingPipeline
+        from pantau.audio.backends._streaming_pipeline import (
+            StreamingPipeline,
+            _EndMarker,
+        )
 
         online.finish.return_value = {"text": "Küche einschalten"}
 
@@ -343,7 +357,7 @@ class TestStreamingPipeline:
         audio_q.put(chunk)
         audio_q.put(chunk)
         audio_q.put(chunk)
-        audio_q.put(None)
+        audio_q.put(_EndMarker(speech_detected=True))
 
         pipeline = StreamingPipeline(online, cfg)
         await self._run_worker(pipeline, audio_q, result_q)
@@ -361,3 +375,79 @@ class TestStreamingPipeline:
         finals = [i for i in items if isinstance(i, PartialResult) and i.is_final]
         assert len(finals) == 1
         assert finals[0].text == "Küche einschalten"
+
+    async def test_process_worker_skips_finish_when_no_speech_detected(
+        self, online: MagicMock, cfg: SttConfig
+    ) -> None:
+        import queue
+
+        from pantau.audio.backends._streaming_pipeline import (
+            StreamingPipeline,
+            _EndMarker,
+        )
+
+        audio_q: queue.Queue = queue.Queue()
+        result_q: asyncio.Queue = asyncio.Queue()
+
+        audio_q.put(_EndMarker(speech_detected=False))
+
+        pipeline = StreamingPipeline(online, cfg)
+        await self._run_worker(pipeline, audio_q, result_q)
+
+        online.finish.assert_not_called()
+
+        items = []
+        while not result_q.empty():
+            items.append(result_q.get_nowait())
+
+        finals = [i for i in items if isinstance(i, PartialResult) and i.is_final]
+        assert len(finals) == 1
+        assert finals[0].text == ""
+
+    def test_record_worker_emits_marker_with_speech_detected_false_on_initial_timeout(
+        self, online: MagicMock, cfg: SttConfig
+    ) -> None:
+        import queue as _queue
+
+        import numpy as np
+
+        from pantau.audio.backends._streaming_pipeline import (
+            _CHUNK_FRAMES,
+            _SAMPLE_RATE,
+            StreamingPipeline,
+            _EndMarker,
+        )
+
+        pipeline = StreamingPipeline(online, cfg)
+        audio_q: _queue.Queue = _queue.Queue()
+
+        initial_timeout_s = 3.0
+        initial_limit = int(initial_timeout_s * _SAMPLE_RATE / _CHUNK_FRAMES)
+        silence_chunk = np.zeros((512, 1), dtype=np.float32)
+        read_returns = [(silence_chunk, None)] * (initial_limit + 1)
+
+        mock_stream = MagicMock()
+        mock_stream.read.side_effect = read_returns
+
+        mock_vad = MagicMock()
+        mock_vad.is_speech.return_value = False
+
+        mock_ctx = MagicMock()
+        mock_ctx.__enter__ = MagicMock(return_value=mock_stream)
+        mock_ctx.__exit__ = MagicMock(return_value=False)
+
+        with (
+            patch(
+                "pantau.audio.backends._streaming_pipeline.sd.InputStream",
+                return_value=mock_ctx,
+            ),
+            patch("pantau.audio.vad.SileroVAD", return_value=mock_vad),
+        ):
+            pipeline._record_worker(audio_q, initial_timeout_s)
+
+        items = []
+        while not audio_q.empty():
+            items.append(audio_q.get_nowait())
+
+        assert isinstance(items[-1], _EndMarker)
+        assert items[-1].speech_detected is False

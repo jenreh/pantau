@@ -83,7 +83,7 @@ def test_stt_config_defaults() -> None:
 def test_wake_word_config_defaults() -> None:
     cfg = WakeWordConfig()
     assert cfg.threshold == 0.5
-    assert cfg.post_wake_timeout_s == 6.0
+    assert cfg.post_wake_timeout_s == 3.0
 
 
 def test_tts_config_defaults() -> None:

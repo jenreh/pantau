@@ -20,7 +20,7 @@ class PicovoiceCheetahAdapter:
         import pvcheetah
 
         self._cheetah = pvcheetah.create(
-            access_key=cfg.api_key,
+            access_key=cfg.api_key.get_secret_value(),
             endpoint_duration_sec=cfg.silence_stop_s,
             enable_automatic_punctuation=False,
         )

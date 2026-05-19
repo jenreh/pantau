@@ -131,7 +131,7 @@ def build_agent(
         model = OllamaModel(
             cfg.llm.model,
             provider=OllamaProvider(
-                api_key=cfg.llm.api_key or None,
+                api_key=cfg.llm.api_key.get_secret_value() or None,
                 base_url=cfg.llm.base_url,
             ),
         )
@@ -139,7 +139,7 @@ def build_agent(
         model = OpenAIResponsesModel(
             cfg.llm.model,
             provider=OpenAIProvider(
-                api_key=cfg.llm.api_key or None,
+                api_key=cfg.llm.api_key.get_secret_value() or None,
                 base_url=cfg.llm.base_url,
             ),
         )

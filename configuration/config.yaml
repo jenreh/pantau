@@ -9,7 +9,7 @@ app:
   wake_word:
     model: models/pantau_x.tflite
     threshold: 0.5
-    post_wake_timeout_s: 6.0
+    post_wake_timeout_s: 3.0
 
   stt:
     provider: simul_streaming
