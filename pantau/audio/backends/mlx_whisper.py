@@ -35,6 +35,7 @@ class MlxWhisperAdapter(BatchAdapter):
         )
         log.info("Loading MLX Whisper model: %s", self._repo)
         self._executor.submit(self._load_model).result()
+        self._executor.submit(self._warmup).result()
         log.info("MLX Whisper model ready")
 
     def _load_model(self) -> None:
@@ -42,6 +43,9 @@ class MlxWhisperAdapter(BatchAdapter):
         from mlx_whisper.transcribe import ModelHolder
 
         self._model = ModelHolder.get_model(self._repo, mx.float16)
+
+    def _warmup(self) -> None:
+        self._transcribe(np.zeros(1600, dtype=np.float32))
 
     def _transcribe(self, audio: np.ndarray) -> str:
         import mlx_whisper
@@ -55,6 +59,9 @@ class MlxWhisperAdapter(BatchAdapter):
             condition_on_previous_text=False,
             temperature=0.0,
             word_timestamps=False,
+            no_speech_threshold=None,
+            compression_ratio_threshold=None,
+            logprob_threshold=None,
         )
         return result["text"].strip()
 
